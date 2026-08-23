@@ -13,6 +13,7 @@ import { Socket_WebFiles } from './Controllers/_WebFiles/Socket_WebFiles';
 import { Socket_Clientes } from './Controllers/_WSGL_Clientes/Socket_Clientes';
 import { Socket_Contratos } from './Controllers/_WSGL_Contratos/Socket_Contratos';
 import { Socket_Ambientes } from './Controllers/_WSGL_Ambientes/Socket_Ambientes';
+import { Socket_Clusters } from './Controllers/_WSGL_Clusters/Socket_Clusters';
 
 const _Logger: Logger = new Logger();
 let _Config: Modelo_Config;
@@ -97,6 +98,7 @@ InicializarBanco().then(async () => {
         new Socket_Clientes(_Config, _BD, _Core_Conection).Inicializar_Listeners();
         new Socket_Contratos(_Config, _BD, _Core_Conection).Inicializar_Listeners();
         new Socket_Ambientes(_Config, _BD, _Core_Conection).Inicializar_Listeners();
+        new Socket_Clusters(_Config, _BD, _Core_Conection).Inicializar_Listeners();
         _Logger.System('[Gerador] Módulo Gerador de Licenças inicializado.');
     }).catch((err) => _Logger.Error('Ao iniciar o Core', err));
 }).catch((err) => _Logger.Error('Ao conectar no banco de dados', err));
