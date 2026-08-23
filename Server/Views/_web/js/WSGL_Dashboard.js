@@ -59,8 +59,10 @@ function _WSGL_AbrirTelaDashboard() {
     _LogAtividades.Registrar("Aberto: Dashboard", "info");
 
     _WebSocket.Emit("wsgl/dashboard.resumo", "WSCore_GeradorLicencas/*", {}, (r) => {
-        if (r && (r.status === "OK" || typeof r.clientes_ativos !== "undefined")) {
-            _WSGL_RenderizarCardsResumo(grid, r);
+        // Socket_Dashboard responde { status:'OK', dados:{...indicadores} }.
+        const resumo = r && (r.dados || r);
+        if (r && r.status === "OK" && resumo) {
+            _WSGL_RenderizarCardsResumo(grid, resumo);
         } else {
             _WSGL_RenderizarCardsErro(grid, (r && r.mensagem) || "Falha ao carregar indicadores.");
         }
