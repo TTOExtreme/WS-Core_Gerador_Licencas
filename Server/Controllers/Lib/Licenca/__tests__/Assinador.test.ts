@@ -55,7 +55,13 @@ describe('assinarLicenca', () => {
     const partes = jws.split('.');
     const adulterada = `${partes[0]}.${Buffer.from('{"lic_id":"HACK"}').toString('base64url')}.${partes[2]}`;
     const chavePub = await importSPKI(publicaPem, ALG_LICENCA);
-    await expect(jwtVerify(adulterada, chavePub)).rejects.toBeDefined();
+    await expect(jwtVerify(adulterada, chavePub)).rejects.toThrow();
+  });
+
+  it('rejeita validade não-positiva', async () => {
+    await expect(assinarLicenca(claimsExemplo(), { validadeDias: 0 })).rejects.toMatchObject({
+      mensagem: 'Validade da licença deve ser positiva',
+    });
   });
 
   it('lança se a chave privada não estiver configurada', async () => {
