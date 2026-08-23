@@ -125,5 +125,18 @@ export class Socket_Clusters {
                 }).catch((err) => callback({ status: 'Erro', mensagem: (err as { mensagem?: string }).mensagem ?? 'Erro ao inativar cluster' }));
             });
         });
+
+        sc.on('wsgl/clusters.substituir', (d: Pacotes_Socket, callback = (..._: unknown[]) => { }) => {
+            this.comAutorizacao(d, 'wsgl/clusters.substituir', callback, (usuario) => {
+                const p = this.parse<{ clusterAntigoId: number; clusterNovoId: number; justificativa: string }>(d.dados, callback); if (!p) return;
+                if (typeof p.clusterAntigoId !== 'number' || !p.clusterAntigoId) { callback({ status: 'Erro', mensagem: 'Campo obrigatório: clusterAntigoId' }); return; }
+                if (typeof p.clusterNovoId !== 'number' || !p.clusterNovoId) { callback({ status: 'Erro', mensagem: 'Campo obrigatório: clusterNovoId' }); return; }
+                if (typeof p.justificativa !== 'string' || !p.justificativa.trim()) { callback({ status: 'Erro', mensagem: 'Campo obrigatório: justificativa' }); return; }
+                this._Cfg.Substituir(p.clusterAntigoId, p.clusterNovoId, p.justificativa, usuario.id).then((r) => {
+                    AuditDB.Gravar({ evento: 'wsgl/clusters.substituir', usuario_id: usuario.id, usuario_login: usuario.usuario, origem_modulo: d.origem, dados_entrada: d.dados, status: 'OK', retorno: `antigo=${p.clusterAntigoId} novo=${p.clusterNovoId} movidas=${r.movidas}` });
+                    callback({ status: 'OK', dados: r });
+                }).catch((err) => callback({ status: 'Erro', mensagem: (err as { mensagem?: string }).mensagem ?? 'Erro ao substituir cluster' }));
+            });
+        });
     }
 }
