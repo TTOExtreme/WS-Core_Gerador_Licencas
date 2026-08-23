@@ -102,6 +102,13 @@ export class Config_Licencas {
     return { registros: Object.assign([], registrosResult) as unknown[], total: totalLinhas[0]?.total ?? 0 };
   }
 
+  /** Marca o instante da ultima comunicacao de um cluster (telemetria de monitoramento). */
+  private async _tocarComunicacaoCluster(cluster_uid: string): Promise<void> {
+    await this._BD.Query(
+      "UPDATE _Mod_WSGL_Clusters SET ultima_comunicacao = ? WHERE cluster_uid = ? AND excluido = 0",
+      [new Date(), cluster_uid]);
+  }
+
   /** API: retorna os JWS das licenças ativas (não expiradas/revogadas) de um cluster aprovado. */
   public async LicencasAtivasPorClusterUid(cluster_uid: string): Promise<string[]> {
     const rows = Object.assign([], await this._BD.Query(
@@ -110,6 +117,7 @@ export class Config_Licencas {
         WHERE clu.cluster_uid = ? AND clu.situacao = 'aprovado'
           AND l.excluido = 0 AND l.situacao = 'ativa' AND l.expira_em > NOW()`, [cluster_uid])
     ) as Array<{ jws: string }>;
+    await this._tocarComunicacaoCluster(cluster_uid);
     return rows.map((r) => r.jws);
   }
 
@@ -134,6 +142,7 @@ export class Config_Licencas {
         [jws, kidAtual(), agora, expira, agora, l.id]);
       novos.push(jws);
     }
+    await this._tocarComunicacaoCluster(cluster_uid);
     return novos;
   }
 

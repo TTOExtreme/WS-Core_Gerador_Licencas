@@ -80,3 +80,17 @@ describe('Config_Licencas ciclo de vida', () => {
     await expect(cfg.RenovarLicenca(5, 9)).rejects.toMatchObject({ mensagem: 'Só é possível renovar licenças ativas' });
   });
 });
+
+describe('Config_Licencas telemetria', () => {
+  it('LicencasAtivasPorClusterUid registra ultima_comunicacao do cluster', async () => {
+    const fake = new FakeBD();
+    fake.enfileirar([{ jws: 'a.b.c' }]); // SELECT licencas
+    fake.enfileirar({ affectedRows: 1 }); // UPDATE ultima_comunicacao
+    const cfg = new Config_Licencas({} as Modelo_Config, fake.comoConector());
+    const licencas = await cfg.LicencasAtivasPorClusterUid('uid-1');
+    expect(licencas).toEqual(['a.b.c']);
+    const upd = fake.queries.find((q) => q.sql.includes('ultima_comunicacao'));
+    expect(upd).toBeDefined();
+    expect(upd!.valores).toContain('uid-1');
+  });
+});
