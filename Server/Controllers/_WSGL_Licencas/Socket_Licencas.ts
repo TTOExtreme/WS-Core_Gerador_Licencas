@@ -71,5 +71,38 @@ export class Socket_Licencas {
                 }).catch((err) => callback({ status: 'Erro', mensagem: (err as { mensagem?: string }).mensagem ?? 'Erro ao emitir licença' }));
             });
         });
+
+        sc.on('wsgl/licencas.renovar', (d: Pacotes_Socket, callback = (..._: unknown[]) => { }) => {
+            this.comAutorizacao(d, 'wsgl/licencas.renovar', callback, (usuario) => {
+                const p = this.parse<{ id: number }>(d.dados, callback); if (!p) return;
+                if (typeof p.id !== 'number') { callback({ status: 'Erro', mensagem: 'Campo obrigatório: id' }); return; }
+                this._Cfg.RenovarLicenca(p.id, usuario.id).then((jws) => {
+                    AuditDB.Gravar({ evento: 'wsgl/licencas.renovar', usuario_id: usuario.id, usuario_login: usuario.usuario, origem_modulo: d.origem, dados_entrada: d.dados, status: 'OK', retorno: `id=${p.id}` });
+                    callback({ status: 'OK', dados: { jws } });
+                }).catch((err) => callback({ status: 'Erro', mensagem: (err as { mensagem?: string }).mensagem ?? 'Erro ao renovar licença' }));
+            });
+        });
+
+        sc.on('wsgl/licencas.estender', (d: Pacotes_Socket, callback = (..._: unknown[]) => { }) => {
+            this.comAutorizacao(d, 'wsgl/licencas.estender', callback, (usuario) => {
+                const p = this.parse<{ id: number; dias: number; motivo?: string }>(d.dados, callback); if (!p) return;
+                if (typeof p.id !== 'number') { callback({ status: 'Erro', mensagem: 'Campo obrigatório: id' }); return; }
+                this._Cfg.Estender(p.id, Number(p.dias), usuario.id).then((jws) => {
+                    AuditDB.Gravar({ evento: 'wsgl/licencas.estender', usuario_id: usuario.id, usuario_login: usuario.usuario, origem_modulo: d.origem, dados_entrada: d.dados, status: 'OK', retorno: `id=${p.id}` });
+                    callback({ status: 'OK', dados: { jws } });
+                }).catch((err) => callback({ status: 'Erro', mensagem: (err as { mensagem?: string }).mensagem ?? 'Erro ao estender licença' }));
+            });
+        });
+
+        sc.on('wsgl/licencas.revogar', (d: Pacotes_Socket, callback = (..._: unknown[]) => { }) => {
+            this.comAutorizacao(d, 'wsgl/licencas.revogar', callback, (usuario) => {
+                const p = this.parse<{ id: number; motivo: string }>(d.dados, callback); if (!p) return;
+                if (typeof p.id !== 'number') { callback({ status: 'Erro', mensagem: 'Campo obrigatório: id' }); return; }
+                this._Cfg.Revogar(p.id, p.motivo, usuario.id).then(() => {
+                    AuditDB.Gravar({ evento: 'wsgl/licencas.revogar', usuario_id: usuario.id, usuario_login: usuario.usuario, origem_modulo: d.origem, dados_entrada: d.dados, status: 'OK', retorno: `id=${p.id} revogada` });
+                    callback({ status: 'OK' });
+                }).catch((err) => callback({ status: 'Erro', mensagem: (err as { mensagem?: string }).mensagem ?? 'Erro ao revogar licença' }));
+            });
+        });
     }
 }
