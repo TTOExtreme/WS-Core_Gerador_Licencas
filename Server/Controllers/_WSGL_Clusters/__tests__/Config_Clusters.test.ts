@@ -45,4 +45,18 @@ describe('Config_Clusters', () => {
     expect(fake.queries[0].sql).toContain('UPDATE _Mod_WSGL_Clusters');
     expect(fake.queries[0].sql).toContain("situacao = 'aprovado'");
   });
+
+  it('Substituir move licencas e inativa o cluster antigo', async () => {
+    const fake = new FakeBD();
+    // Config_Clusters.Substituir: valida antigo, valida novo, delega a MoverParaCluster, inativa antigo.
+    fake.enfileirar([{ id: 1, situacao: 'aprovado' }]); // Buscar cluster antigo (Config_Clusters.Buscar)
+    fake.enfileirar([{ id: 2, situacao: 'aprovado' }]); // Buscar cluster novo
+    fake.enfileirar([{ cluster_uid: 'uid-2', situacao: 'aprovado' }]); // _clusterUidAprovado (Config_Licencas)
+    fake.enfileirar([]); // MoverParaCluster: sem licencas ativas
+    fake.enfileirar({ affectedRows: 1 }); // UPDATE inativa antigo
+    const cfg = new Config_Clusters({} as Modelo_Config, fake.comoConector());
+    await cfg.Substituir(1, 2, 'migracao de infra', 9);
+    const upd = fake.queries.find((q) => q.sql.includes('_Mod_WSGL_Clusters') && q.sql.includes("situacao = 'inativo'"));
+    expect(upd).toBeDefined();
+  });
 });

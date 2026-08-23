@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { Modelo_Config } from '../../Models/Modelo_Configuracao';
 import { Conector_Mysql } from '../Lib/Conector_Mysql';
 import { _Mod_WSGL_Clusters } from '../../Models/DB/_Mod_WSGL_Clusters';
+import { Config_Licencas } from '../_WSGL_Licencas/Config_Licencas';
 
 export interface DadosCluster {
   cliente_id: number; ambiente_id: number; nome: string; cluster_uid?: string | null;
@@ -87,5 +88,23 @@ export class Config_Clusters {
 
   public async Inativar(id: number, por = 0): Promise<void> {
     await this._BD.Query("UPDATE _Mod_WSGL_Clusters SET situacao = 'inativo', editado_em = ?, editado_por = ? WHERE id = ? AND excluido = 0", [new Date(), por, id]);
+  }
+
+  /**
+   * Substitui um cluster: move as licenças ativas do antigo para o novo (re-assinadas
+   * para o novo cluster_uid via Config_Licencas.MoverParaCluster) e inativa o antigo.
+   * Garante que a mesma licença não permaneça ativa em dois clusters.
+   */
+  public async Substituir(clusterAntigoId: number, clusterNovoId: number, justificativa: string, por = 0): Promise<{ movidas: number }> {
+    if (!justificativa || !justificativa.trim()) throw { mensagem: 'Justificativa é obrigatória' };
+    if (clusterAntigoId === clusterNovoId) throw { mensagem: 'Cluster de origem e destino não podem ser o mesmo' };
+    await this.Buscar(clusterAntigoId); // valida existência (lança se não achar)
+    await this.Buscar(clusterNovoId);
+    const licencas = new Config_Licencas(this._Config, this._BD);
+    const movidas = await licencas.MoverParaCluster(clusterAntigoId, clusterNovoId, por);
+    await this._BD.Query(
+      "UPDATE _Mod_WSGL_Clusters SET situacao = 'inativo', editado_em = ?, editado_por = ? WHERE id = ? AND excluido = 0",
+      [new Date(), por, clusterAntigoId]);
+    return { movidas };
   }
 }
