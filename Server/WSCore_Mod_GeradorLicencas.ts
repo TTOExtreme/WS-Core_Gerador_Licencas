@@ -10,6 +10,7 @@ import { Cadastro_Dados_Banco } from './Controllers/Cadastro_Dados_Banco';
 import { LoggerDB } from './Controllers/Lib/LoggerDB';
 import { AuditDB } from './Controllers/Lib/AuditDB';
 import { Socket_WebFiles } from './Controllers/_WebFiles/Socket_WebFiles';
+import { Socket_Clientes } from './Controllers/_WSGL_Clientes/Socket_Clientes';
 
 const _Logger: Logger = new Logger();
 let _Config: Modelo_Config;
@@ -91,6 +92,7 @@ InicializarBanco().then(async () => {
 
     InicializarSocketServer().then(async () => {
         new Socket_WebFiles(_Config, _BD, _Core_Conection).Inicializar_Listeners();
+        new Socket_Clientes(_Config, _BD, _Core_Conection).Inicializar_Listeners();
         _Logger.System('[Gerador] Módulo Gerador de Licenças inicializado.');
     }).catch((err) => _Logger.Error('Ao iniciar o Core', err));
 }).catch((err) => _Logger.Error('Ao conectar no banco de dados', err));
