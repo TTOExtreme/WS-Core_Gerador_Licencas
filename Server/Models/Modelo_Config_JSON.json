@@ -1,0 +1,33 @@
+{
+    "Modulo": {
+        "ID": ""
+    },
+    "Instalado": false,
+    "Core": {
+        "Host": "127.0.0.1",
+        "Porta": 7000
+    },
+    "BD": {
+        "Usuario": "wscore_rh_usuario",
+        "Senha": "senhasegura123",
+        "Database": "wscore_rh",
+        "Host": "127.0.0.1",
+        "Porta": 3306
+    },
+    "LOG": {
+        "Console": true,
+        "Arquivo": true,
+        "LocalArquivo": "/var/log/wscore_rh/",
+        "Rotatividade": 86400
+    },
+    "Ponto": {
+        "Porta": 8778,
+        "Cert": { "Key": "./Certs/ponto.key", "Cert": "./Certs/ponto.crt", "GerarSeAusente": true },
+        "CookieNome": "WSRH_PONTO",
+        "CookieSeguro": true
+    },
+    "Licenciamento": {
+        "Porta": 8779,
+        "Cert": { "Key": "./Certs/licenciamento.key", "Cert": "./Certs/licenciamento.crt", "GerarSeAusente": true }
+    }
+}
