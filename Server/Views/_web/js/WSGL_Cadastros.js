@@ -283,8 +283,8 @@ if (!window._WSGL_Cadastros_Registrada) {
                             tipo: 'excluir',
                             titulo: 'Excluir ' + sel.length + ' registro(s)',
                             subtitulo: 'Esta ação é irreversível.',
-                            registros: sel.map((r) => ({ label: r.nome || r.razao_social || ('#' + r.id) })),
-                            textoConfirmacao: sel.length === 1 ? (sel[0].nome || sel[0].razao_social || 'EXCLUIR') : 'EXCLUIR',
+                            registros: sel.map((r) => ({ label: r.nome || r.razao_social || r.codigo || ('#' + r.id) })),
+                            textoConfirmacao: sel.length === 1 ? (sel[0].nome || sel[0].razao_social || sel[0].codigo || 'EXCLUIR') : 'EXCLUIR',
                             textoBotao: 'Excluir definitivamente',
                         });
                         if (!confirmado) return;

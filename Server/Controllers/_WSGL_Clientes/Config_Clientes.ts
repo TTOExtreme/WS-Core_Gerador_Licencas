@@ -29,7 +29,7 @@ export class Config_Clientes {
       [like, like, like]);
     const totalLinhas = Object.assign([], totalResult) as Array<{ total: number }>;
     const registrosResult = await this._BD.Query(
-      `SELECT * FROM _Mod_WSGL_Clientes WHERE excluido = 0 AND (razao_social LIKE ? OR nome_fantasia LIKE ? OR documento LIKE ?)
+      `SELECT *, (CASE WHEN ativo = 1 THEN 'ativo' ELSE 'inativo' END) AS status FROM _Mod_WSGL_Clientes WHERE excluido = 0 AND (razao_social LIKE ? OR nome_fantasia LIKE ? OR documento LIKE ?)
         ORDER BY ${ordem} ${direcao} LIMIT ? OFFSET ?`,
       [like, like, like, limite, offset]);
     return { registros: Object.assign([], registrosResult) as unknown[], total: totalLinhas[0]?.total ?? 0 };

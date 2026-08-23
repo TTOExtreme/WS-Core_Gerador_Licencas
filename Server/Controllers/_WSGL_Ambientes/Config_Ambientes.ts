@@ -30,7 +30,7 @@ export class Config_Ambientes {
       [like]);
     const totalLinhas = Object.assign([], totalResult) as Array<{ total: number }>;
     const registrosResult = await this._BD.Query(
-      `SELECT c.*, cli.razao_social AS cliente_razao_social
+      `SELECT c.*, cli.razao_social AS cliente_razao_social, (CASE WHEN c.ativo = 1 THEN 'ativo' ELSE 'inativo' END) AS status
          FROM _Mod_WSGL_Ambientes c
          LEFT JOIN _Mod_WSGL_Clientes cli ON cli.id = c.cliente_id
         WHERE c.excluido = 0 AND (c.nome LIKE ?)
