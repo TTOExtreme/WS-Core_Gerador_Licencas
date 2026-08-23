@@ -11,3 +11,8 @@ INSERT IGNORE INTO _Menus (codigo,nome,descricao,menu_pai,versao,permissao,modul
 ("wsgl/clusters","Clusters","Clusters autorizados e sua identidade","wsgl","1.1.0","tela/wsgl/clusters","WSCore_GeradorLicencas","open/wsgl/clusters","./modulos/WSCore_GeradorLicencas/js/WSGL_Cadastros.js","{\"menu_icon\":\"hub\"}");
 
 UPDATE _Menus SET categoria='cadastros' WHERE codigo IN ('wsgl/clientes','wsgl/contratos','wsgl/ambientes','wsgl/clusters');
+
+-- Tela de Licencas (Fase G2): emissao e consulta
+INSERT IGNORE INTO _Menus (codigo,nome,descricao,menu_pai,versao,permissao,modulo,evento,load_dependencia,configuracao) VALUES
+("wsgl/licencas","Licenças","Emissao e consulta de licencas assinadas","wsgl","1.1.0","tela/wsgl/licencas","WSCore_GeradorLicencas","open/wsgl/licencas","./modulos/WSCore_GeradorLicencas/js/WSGL_Licencas.js","{\"menu_icon\":\"key\"}");
+UPDATE _Menus SET categoria='cadastros' WHERE codigo IN ('wsgl/licencas');

@@ -42,3 +42,9 @@ INSERT IGNORE INTO _Permissoes (codigo,nome,descricao,modulo) VALUES
 ("wsgl/clusters.aprovar","Aprovacao Clusters","Permissao de aprovar cluster","WSCore_GeradorLicencas"),
 ("wsgl/clusters.bloquear","Bloqueio Clusters","Permissao de bloquear cluster","WSCore_GeradorLicencas"),
 ("wsgl/clusters.inativar","Inativacao Clusters","Permissao de inativar cluster","WSCore_GeradorLicencas");
+
+-- Permissoes da tela de Licencas (Fase G2)
+INSERT IGNORE INTO _Permissoes (codigo,nome,descricao,modulo) VALUES
+("tela/wsgl/licencas","Tela Licencas","Tela de emissao e consulta de licencas","WSCore_GeradorLicencas"),
+("wsgl/licencas.listar","Listagem Licencas","Permissao de listagem de licencas","WSCore_GeradorLicencas"),
+("wsgl/licencas.emitir","Emissao Licencas","Permissao de emitir licencas","WSCore_GeradorLicencas");
