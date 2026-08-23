@@ -26,7 +26,9 @@ export class Config_Auditoria {
     if (params.usuario) { cond.push('usuario_login LIKE ?'); val.push(`%${params.usuario}%`); }
     if (params.status) { cond.push('status = ?'); val.push(params.status); }
     if (params.data_ini) { cond.push('criado_em >= ?'); val.push(params.data_ini); }
-    if (params.data_fim) { cond.push('criado_em <= ?'); val.push(params.data_fim); }
+    // Inclui o dia inteiro quando `data_fim` vem como data pura (YYYY-MM-DD):
+    // criado_em < data_fim + 1 dia, evitando excluir os registros do próprio dia.
+    if (params.data_fim) { cond.push('criado_em < (? + INTERVAL 1 DAY)'); val.push(params.data_fim); }
 
     const where = cond.join(' AND ');
     const totalResult = await this._BD.Query(
