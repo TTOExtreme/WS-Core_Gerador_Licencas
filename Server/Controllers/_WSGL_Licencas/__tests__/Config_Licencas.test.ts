@@ -72,4 +72,11 @@ describe('Config_Licencas ciclo de vida', () => {
     const upd = fake.queries.find((q) => q.sql.includes("tipo_emissao = 'renovacao'"));
     expect(upd).toBeDefined();
   });
+
+  it('RenovarLicenca rejeita licença revogada (integridade da revogação)', async () => {
+    const fake = new FakeBD();
+    fake.enfileirar([{ id: 5, cluster_id: 4, situacao: 'revogada', excluido: 0 }]); // Buscar licenca
+    const cfg = new Config_Licencas({} as Modelo_Config, fake.comoConector());
+    await expect(cfg.RenovarLicenca(5, 9)).rejects.toMatchObject({ mensagem: 'Só é possível renovar licenças ativas' });
+  });
 });

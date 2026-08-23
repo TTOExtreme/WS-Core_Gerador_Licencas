@@ -173,6 +173,7 @@ export class Config_Licencas {
   /** Renova (re-assina por 30d) uma licença específica pelo id. Retorna o novo JWS. */
   public async RenovarLicenca(id: number, por = 0): Promise<string> {
     const l = await this.Buscar(id);
+    if (l.situacao !== 'ativa') throw { mensagem: 'Só é possível renovar licenças ativas' };
     const cluster_uid = await this._clusterUidAprovado(l.cluster_id);
     const jws = await this._reassinar(l, cluster_uid, 30);
     const agora = new Date();
@@ -188,6 +189,7 @@ export class Config_Licencas {
   public async Estender(id: number, dias: number, por = 0): Promise<string> {
     if (!dias || dias <= 0) throw { mensagem: 'Período de extensão inválido' };
     const l = await this.Buscar(id);
+    if (l.situacao !== 'ativa') throw { mensagem: 'Só é possível estender licenças ativas' };
     const cluster_uid = await this._clusterUidAprovado(l.cluster_id);
     const jws = await this._reassinar(l, cluster_uid, dias);
     const agora = new Date();
