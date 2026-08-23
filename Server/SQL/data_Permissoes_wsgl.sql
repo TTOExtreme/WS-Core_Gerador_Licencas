@@ -48,3 +48,10 @@ INSERT IGNORE INTO _Permissoes (codigo,nome,descricao,modulo) VALUES
 ("tela/wsgl/licencas","Tela Licencas","Tela de emissao e consulta de licencas","WSCore_GeradorLicencas"),
 ("wsgl/licencas.listar","Listagem Licencas","Permissao de listagem de licencas","WSCore_GeradorLicencas"),
 ("wsgl/licencas.emitir","Emissao Licencas","Permissao de emitir licencas","WSCore_GeradorLicencas");
+
+-- Permissoes de ciclo de vida (Fase G3)
+INSERT IGNORE INTO _Permissoes (codigo,nome,descricao,modulo) VALUES
+("wsgl/licencas.renovar","Renovacao Licencas","Permissao de renovar licencas","WSCore_GeradorLicencas"),
+("wsgl/licencas.estender","Extensao Licencas","Permissao de estender licencas","WSCore_GeradorLicencas"),
+("wsgl/licencas.revogar","Revogacao Licencas","Permissao de revogar licencas","WSCore_GeradorLicencas"),
+("wsgl/clusters.substituir","Substituicao Clusters","Permissao de substituir/migrar cluster","WSCore_GeradorLicencas");
