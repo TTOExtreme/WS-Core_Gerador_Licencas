@@ -15,6 +15,7 @@ import { Socket_Contratos } from './Controllers/_WSGL_Contratos/Socket_Contratos
 import { Socket_Ambientes } from './Controllers/_WSGL_Ambientes/Socket_Ambientes';
 import { Socket_Clusters } from './Controllers/_WSGL_Clusters/Socket_Clusters';
 import { Socket_Licencas } from './Controllers/_WSGL_Licencas/Socket_Licencas';
+import { Servidor_Licenciamento } from './Controllers/_WSGL_Licencas/Servidor_Licenciamento';
 
 const _Logger: Logger = new Logger();
 let _Config: Modelo_Config;
@@ -93,6 +94,10 @@ InicializarBanco().then(async () => {
 
     Logger.SetDB(new LoggerDB(_BD));
     AuditDB.Inicializar(_BD, '_Mod_WSGL_Auditoria');
+
+    // API de Licenciamento: servidor HTTPS apartado (porta/cert do config), no mesmo
+    // processo mas independente da conexao com o Core.
+    new Servidor_Licenciamento(_Config, _BD).Iniciar();
 
     InicializarSocketServer().then(async () => {
         new Socket_WebFiles(_Config, _BD, _Core_Conection).Inicializar_Listeners();
