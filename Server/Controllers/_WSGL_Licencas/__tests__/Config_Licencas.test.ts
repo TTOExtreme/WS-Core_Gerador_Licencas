@@ -41,3 +41,35 @@ describe('Config_Licencas.Emitir', () => {
     expect(jwsParam).toBeDefined();
   });
 });
+
+describe('Config_Licencas ciclo de vida', () => {
+  it('Revogar exige motivo', async () => {
+    const fake = new FakeBD();
+    const cfg = new Config_Licencas({} as Modelo_Config, fake.comoConector());
+    await expect(cfg.Revogar(5, '', 1)).rejects.toMatchObject({ mensagem: 'Motivo da revogação é obrigatório' });
+  });
+
+  it('Revogar marca situacao=revogada', async () => {
+    const fake = new FakeBD();
+    fake.enfileirar({ affectedRows: 1 }); // UPDATE
+    const cfg = new Config_Licencas({} as Modelo_Config, fake.comoConector());
+    await cfg.Revogar(5, 'inadimplencia', 1);
+    const upd = fake.queries.find((q) => q.sql.includes("situacao = 'revogada'"));
+    expect(upd).toBeDefined();
+    expect(upd!.valores).toContain('inadimplencia');
+  });
+
+  it('RenovarLicenca re-assina e atualiza a licença', async () => {
+    const fake = new FakeBD();
+    fake.enfileirar([{ id: 5, lic_id: 'l5', tipo: 'modulo', cliente_id: 1, contrato_id: null, ambiente_id: 3, cluster_id: 4, modulo: 'M', instancia: null, nivel: 'professional', limites: null, situacao: 'ativa', excluido: 0 }]); // Buscar licenca
+    fake.enfileirar([{ id: 4, cluster_uid: 'uid-4', situacao: 'aprovado' }]); // cluster
+    fake.enfileirar([{ id: 3, tipo: 'producao' }]); // ambiente (para _ambienteTipo)
+    fake.enfileirar({ affectedRows: 1 }); // UPDATE
+    const cfg = new Config_Licencas({} as Modelo_Config, fake.comoConector());
+    const jws = await cfg.RenovarLicenca(5, 9);
+    expect(typeof jws).toBe('string');
+    expect(jws.split('.').length).toBe(3);
+    const upd = fake.queries.find((q) => q.sql.includes("tipo_emissao = 'renovacao'"));
+    expect(upd).toBeDefined();
+  });
+});

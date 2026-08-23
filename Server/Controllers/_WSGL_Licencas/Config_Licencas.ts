@@ -125,19 +125,7 @@ export class Config_Licencas {
     for (const l of rows) {
       // Parse defensivo: uma licença com `limites` malformado não deve derrubar a
       // renovação de todo o cluster (cada licença é renovada independentemente).
-      let limites: LicencaLimites | null = null;
-      if (l.limites) {
-        try { limites = JSON.parse(l.limites as unknown as string) as LicencaLimites; }
-        catch { limites = null; }
-      }
-      const claims: LicencaClaims = {
-        lic_id: l.lic_id, tipo: l.tipo as TipoLicenca, cliente: String(l.cliente_id),
-        contrato: l.contrato_id != null ? String(l.contrato_id) : null,
-        ambiente: (await this._ambienteTipo(l.ambiente_id)), cluster_id: cluster_uid,
-        modulo: l.modulo, instancia: l.instancia, nivel: (l.nivel as NivelComercial | null),
-        limites,
-      };
-      const jws = await assinarLicenca(claims, { validadeDias: 30 });
+      const jws = await this._reassinar(l, cluster_uid, 30);
       const agora = new Date();
       const expira = new Date(agora.getTime() + 30 * 86400 * 1000);
       await this._BD.Query(
@@ -154,5 +142,89 @@ export class Config_Licencas {
       'SELECT tipo FROM _Mod_WSGL_Ambientes WHERE id = ? LIMIT 1', [ambiente_id])
     ) as Array<{ tipo: string }>;
     return (rows[0]?.tipo ?? 'producao') as TipoAmbiente;
+  }
+
+  /** Reconstrói os claims de uma licença existente e re-assina (parse defensivo de limites). */
+  private async _reassinar(l: _Mod_WSGL_Licencas, cluster_uid: string, dias: number): Promise<string> {
+    let limites: LicencaLimites | null = null;
+    if (l.limites) {
+      try { limites = JSON.parse(l.limites as unknown as string) as LicencaLimites; }
+      catch { limites = null; }
+    }
+    const claims: LicencaClaims = {
+      lic_id: l.lic_id, tipo: l.tipo as TipoLicenca, cliente: String(l.cliente_id),
+      contrato: l.contrato_id != null ? String(l.contrato_id) : null,
+      ambiente: await this._ambienteTipo(l.ambiente_id), cluster_id: cluster_uid,
+      modulo: l.modulo, instancia: l.instancia, nivel: (l.nivel as NivelComercial | null), limites,
+    };
+    return assinarLicenca(claims, { validadeDias: Math.min(dias, 30) });
+  }
+
+  /** Carrega o cluster_uid de um cluster aprovado (ou lança). */
+  private async _clusterUidAprovado(cluster_id: number): Promise<string> {
+    const rows = Object.assign([], await this._BD.Query(
+      "SELECT cluster_uid, situacao FROM _Mod_WSGL_Clusters WHERE id = ? AND excluido = 0 LIMIT 1", [cluster_id])
+    ) as Array<{ cluster_uid: string; situacao: string }>;
+    if (rows.length === 0) throw { mensagem: 'Cluster não encontrado' };
+    if (rows[0].situacao !== 'aprovado') throw { mensagem: 'Cluster não está aprovado' };
+    return rows[0].cluster_uid;
+  }
+
+  /** Renova (re-assina por 30d) uma licença específica pelo id. Retorna o novo JWS. */
+  public async RenovarLicenca(id: number, por = 0): Promise<string> {
+    const l = await this.Buscar(id);
+    const cluster_uid = await this._clusterUidAprovado(l.cluster_id);
+    const jws = await this._reassinar(l, cluster_uid, 30);
+    const agora = new Date();
+    const expira = new Date(agora.getTime() + 30 * 86400 * 1000);
+    await this._BD.Query(
+      `UPDATE _Mod_WSGL_Licencas SET jws = ?, kid = ?, tipo_emissao = 'renovacao', emitida_em = ?, expira_em = ?, editado_em = ?, editado_por = ?
+        WHERE id = ? AND excluido = 0`,
+      [jws, kidAtual(), agora, expira, agora, por, id]);
+    return jws;
+  }
+
+  /** Estende uma licença por `dias` (≤30), re-assinando. Motivo vai para auditoria (camada Socket). */
+  public async Estender(id: number, dias: number, por = 0): Promise<string> {
+    if (!dias || dias <= 0) throw { mensagem: 'Período de extensão inválido' };
+    const l = await this.Buscar(id);
+    const cluster_uid = await this._clusterUidAprovado(l.cluster_id);
+    const jws = await this._reassinar(l, cluster_uid, dias);
+    const agora = new Date();
+    const expira = new Date(agora.getTime() + Math.min(dias, 30) * 86400 * 1000);
+    await this._BD.Query(
+      `UPDATE _Mod_WSGL_Licencas SET jws = ?, kid = ?, tipo_emissao = 'extensao', emitida_em = ?, expira_em = ?, editado_em = ?, editado_por = ?
+        WHERE id = ? AND excluido = 0`,
+      [jws, kidAtual(), agora, expira, agora, por, id]);
+    return jws;
+  }
+
+  /** Revoga uma licença (marca situacao=revogada). Não re-assina; a API deixa de servi-la. */
+  public async Revogar(id: number, motivo: string, por = 0): Promise<void> {
+    if (!motivo || !motivo.trim()) throw { mensagem: 'Motivo da revogação é obrigatório' };
+    await this._BD.Query(
+      `UPDATE _Mod_WSGL_Licencas SET situacao = 'revogada', motivo_revogacao = ?, revogada_em = ?, ativo = 0, editado_em = ?, editado_por = ?
+        WHERE id = ? AND excluido = 0`,
+      [motivo, new Date(), new Date(), por, id]);
+  }
+
+  /** Move as licenças ATIVAS de um cluster para outro (aprovado), re-assinando para o novo cluster_uid. */
+  public async MoverParaCluster(clusterAntigoId: number, clusterNovoId: number, por = 0): Promise<number> {
+    const novoUid = await this._clusterUidAprovado(clusterNovoId);
+    const rows = Object.assign([], await this._BD.Query(
+      "SELECT * FROM _Mod_WSGL_Licencas WHERE cluster_id = ? AND excluido = 0 AND situacao = 'ativa'", [clusterAntigoId])
+    ) as _Mod_WSGL_Licencas[];
+    let movidas = 0;
+    for (const l of rows) {
+      const jws = await this._reassinar(l, novoUid, 30);
+      const agora = new Date();
+      const expira = new Date(agora.getTime() + 30 * 86400 * 1000);
+      await this._BD.Query(
+        `UPDATE _Mod_WSGL_Licencas SET cluster_id = ?, jws = ?, kid = ?, tipo_emissao = 'substituicao', emitida_em = ?, expira_em = ?, editado_em = ?, editado_por = ?
+          WHERE id = ? AND excluido = 0`,
+        [clusterNovoId, jws, kidAtual(), agora, expira, agora, por, l.id]);
+      movidas++;
+    }
+    return movidas;
   }
 }
