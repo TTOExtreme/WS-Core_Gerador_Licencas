@@ -34,7 +34,7 @@ export class Config_Ambientes {
          FROM _Mod_WSGL_Ambientes c
          LEFT JOIN _Mod_WSGL_Clientes cli ON cli.id = c.cliente_id
         WHERE c.excluido = 0 AND (c.nome LIKE ?)
-        ORDER BY ${ordem} ${direcao} LIMIT ? OFFSET ?`,
+        ORDER BY c.${ordem} ${direcao} LIMIT ? OFFSET ?`,
       [like, limite, offset]);
     return { registros: Object.assign([], registrosResult) as unknown[], total: totalLinhas[0]?.total ?? 0 };
   }

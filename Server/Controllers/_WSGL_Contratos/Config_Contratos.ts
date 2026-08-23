@@ -13,6 +13,7 @@ export interface DadosContrato {
 export interface ParametrosListagem { pagina: number; limite: number; pesquisa: string; ordem: string; direcao: string; }
 
 const COLUNAS_ORDENAVEIS = ['codigo', 'vigencia_inicio', 'situacao', 'criado_em'];
+const SITUACOES_CONTRATO = ['ativo', 'suspenso', 'encerrado'];
 
 export class Config_Contratos {
   private _BD: Conector_Mysql; private _Config: Modelo_Config;
@@ -34,7 +35,7 @@ export class Config_Contratos {
          FROM _Mod_WSGL_Contratos c
          LEFT JOIN _Mod_WSGL_Clientes cli ON cli.id = c.cliente_id
         WHERE c.excluido = 0 AND (c.codigo LIKE ? OR c.modalidade LIKE ?)
-        ORDER BY ${ordem} ${direcao} LIMIT ? OFFSET ?`,
+        ORDER BY c.${ordem} ${direcao} LIMIT ? OFFSET ?`,
       [like, like, limite, offset]);
     return { registros: Object.assign([], registrosResult) as unknown[], total: totalLinhas[0]?.total ?? 0 };
   }
@@ -48,6 +49,7 @@ export class Config_Contratos {
 
   public async Criar(d: DadosContrato, criado_por = 0): Promise<_Mod_WSGL_Contratos> {
     if (!d.cliente_id) throw { mensagem: 'Campo obrigatório: cliente_id' };
+    if (d.situacao !== undefined && !SITUACOES_CONTRATO.includes(d.situacao)) throw { mensagem: 'Situação de contrato inválida' };
     const agora = new Date();
     const r = await this._BD.Query(
       `INSERT INTO _Mod_WSGL_Contratos (cliente_id, codigo, modalidade, vigencia_inicio, vigencia_fim, situacao,
@@ -61,6 +63,7 @@ export class Config_Contratos {
   }
 
   public async Editar(id: number, d: Partial<DadosContrato>, editado_por = 0): Promise<_Mod_WSGL_Contratos> {
+    if (d.situacao !== undefined && !SITUACOES_CONTRATO.includes(d.situacao)) throw { mensagem: 'Situação de contrato inválida' };
     const a = await this.Buscar(id);
     await this._BD.Query(
       `UPDATE _Mod_WSGL_Contratos SET cliente_id = ?, codigo = ?, modalidade = ?, vigencia_inicio = ?, vigencia_fim = ?,

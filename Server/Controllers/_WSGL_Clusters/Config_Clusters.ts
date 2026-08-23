@@ -34,7 +34,7 @@ export class Config_Clusters {
          LEFT JOIN _Mod_WSGL_Ambientes amb ON amb.id = c.ambiente_id
          LEFT JOIN _Mod_WSGL_Clientes cli ON cli.id = c.cliente_id
         WHERE c.excluido = 0 AND (c.nome LIKE ? OR c.cluster_uid LIKE ?)
-        ORDER BY ${ordem} ${direcao} LIMIT ? OFFSET ?`,
+        ORDER BY c.${ordem} ${direcao} LIMIT ? OFFSET ?`,
       [like, like, limite, offset]);
     return { registros: Object.assign([], registrosResult) as unknown[], total: totalLinhas[0]?.total ?? 0 };
   }
