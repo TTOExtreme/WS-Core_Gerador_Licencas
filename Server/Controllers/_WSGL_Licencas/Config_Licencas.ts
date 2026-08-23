@@ -123,12 +123,19 @@ export class Config_Licencas {
     ) as _Mod_WSGL_Licencas[];
     const novos: string[] = [];
     for (const l of rows) {
+      // Parse defensivo: uma licença com `limites` malformado não deve derrubar a
+      // renovação de todo o cluster (cada licença é renovada independentemente).
+      let limites: LicencaLimites | null = null;
+      if (l.limites) {
+        try { limites = JSON.parse(l.limites as unknown as string) as LicencaLimites; }
+        catch { limites = null; }
+      }
       const claims: LicencaClaims = {
         lic_id: l.lic_id, tipo: l.tipo as TipoLicenca, cliente: String(l.cliente_id),
         contrato: l.contrato_id != null ? String(l.contrato_id) : null,
         ambiente: (await this._ambienteTipo(l.ambiente_id)), cluster_id: cluster_uid,
         modulo: l.modulo, instancia: l.instancia, nivel: (l.nivel as NivelComercial | null),
-        limites: l.limites ? JSON.parse(l.limites as unknown as string) as LicencaLimites : null,
+        limites,
       };
       const jws = await assinarLicenca(claims, { validadeDias: 30 });
       const agora = new Date();
