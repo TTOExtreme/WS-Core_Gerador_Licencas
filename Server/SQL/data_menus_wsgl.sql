@@ -16,3 +16,10 @@ UPDATE _Menus SET categoria='cadastros' WHERE codigo IN ('wsgl/clientes','wsgl/c
 INSERT IGNORE INTO _Menus (codigo,nome,descricao,menu_pai,versao,permissao,modulo,evento,load_dependencia,configuracao) VALUES
 ("wsgl/licencas","Licenças","Emissao e consulta de licencas assinadas","wsgl","1.1.0","tela/wsgl/licencas","WSCore_GeradorLicencas","open/wsgl/licencas","./modulos/WSCore_GeradorLicencas/js/WSGL_Licencas.js","{\"menu_icon\":\"key\"}");
 UPDATE _Menus SET categoria='cadastros' WHERE codigo IN ('wsgl/licencas');
+
+-- Telas de observabilidade (Fase G4): Dashboard, Monitoramento, Auditoria
+INSERT IGNORE INTO _Menus (codigo,nome,descricao,menu_pai,versao,permissao,modulo,evento,load_dependencia,configuracao) VALUES
+("wsgl/dashboard","Dashboard","Visao geral do licenciamento","wsgl","1.1.0","tela/wsgl/dashboard","WSCore_GeradorLicencas","open/wsgl/dashboard","./modulos/WSCore_GeradorLicencas/js/WSGL_Dashboard.js","{\"menu_icon\":\"insights\"}"),
+("wsgl/monitoramento","Monitoramento","Ambientes e clusters dos clientes","wsgl","1.1.0","tela/wsgl/monitoramento","WSCore_GeradorLicencas","open/wsgl/monitoramento","./modulos/WSCore_GeradorLicencas/js/WSGL_Monitoramento.js","{\"menu_icon\":\"monitor_heart\"}"),
+("wsgl/auditoria","Auditoria","Eventos de auditoria do Licenciador","wsgl","1.1.0","tela/wsgl/auditoria","WSCore_GeradorLicencas","open/wsgl/auditoria","./modulos/WSCore_GeradorLicencas/js/WSGL_Auditoria.js","{\"menu_icon\":\"fact_check\"}");
+UPDATE _Menus SET categoria='dashboards' WHERE codigo IN ('wsgl/dashboard','wsgl/monitoramento','wsgl/auditoria');

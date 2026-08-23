@@ -55,3 +55,9 @@ INSERT IGNORE INTO _Permissoes (codigo,nome,descricao,modulo) VALUES
 ("wsgl/licencas.estender","Extensao Licencas","Permissao de estender licencas","WSCore_GeradorLicencas"),
 ("wsgl/licencas.revogar","Revogacao Licencas","Permissao de revogar licencas","WSCore_GeradorLicencas"),
 ("wsgl/clusters.substituir","Substituicao Clusters","Permissao de substituir/migrar cluster","WSCore_GeradorLicencas");
+
+-- Permissoes das telas de observabilidade (Fase G4)
+INSERT IGNORE INTO _Permissoes (codigo,nome,descricao,modulo) VALUES
+("tela/wsgl/dashboard","Tela Dashboard","Painel geral de licenciamento","WSCore_GeradorLicencas"),
+("tela/wsgl/monitoramento","Tela Monitoramento","Monitoramento de ambientes/clusters","WSCore_GeradorLicencas"),
+("tela/wsgl/auditoria","Tela Auditoria","Consulta de auditoria do Licenciador","WSCore_GeradorLicencas");
