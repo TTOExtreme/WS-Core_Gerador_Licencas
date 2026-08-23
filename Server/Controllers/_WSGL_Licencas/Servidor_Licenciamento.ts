@@ -31,7 +31,7 @@ export class Servidor_Licenciamento {
     // Validação: cluster envia { cluster_uid }; retorna as licenças ativas assinadas.
     app.post('/api/licenciamento/validar', (req: Request, res: Response) => {
       const body = (req.body ?? {}) as { cluster_uid?: string };
-      if (!body.cluster_uid) { res.status(400).json({ status: 'Erro', mensagem: 'cluster_uid obrigatório' }); return; }
+      if (typeof body.cluster_uid !== 'string' || !body.cluster_uid) { res.status(400).json({ status: 'Erro', mensagem: 'cluster_uid obrigatório' }); return; }
       this._Lic.LicencasAtivasPorClusterUid(body.cluster_uid)
         .then((licencas) => res.json({ status: 'OK', licencas }))
         .catch((err) => res.status(500).json({ status: 'Erro', mensagem: (err as { mensagem?: string }).mensagem ?? 'Erro ao validar' }));
@@ -40,7 +40,7 @@ export class Servidor_Licenciamento {
     // Renovação: re-assina por mais 30 dias as licenças ativas do cluster.
     app.post('/api/licenciamento/renovar', (req: Request, res: Response) => {
       const body = (req.body ?? {}) as { cluster_uid?: string };
-      if (!body.cluster_uid) { res.status(400).json({ status: 'Erro', mensagem: 'cluster_uid obrigatório' }); return; }
+      if (typeof body.cluster_uid !== 'string' || !body.cluster_uid) { res.status(400).json({ status: 'Erro', mensagem: 'cluster_uid obrigatório' }); return; }
       this._Lic.RenovarPorClusterUid(body.cluster_uid)
         .then((licencas) => res.json({ status: 'OK', licencas }))
         .catch((err) => res.status(500).json({ status: 'Erro', mensagem: (err as { mensagem?: string }).mensagem ?? 'Erro ao renovar' }));

@@ -96,8 +96,13 @@ InicializarBanco().then(async () => {
     AuditDB.Inicializar(_BD, '_Mod_WSGL_Auditoria');
 
     // API de Licenciamento: servidor HTTPS apartado (porta/cert do config), no mesmo
-    // processo mas independente da conexao com o Core.
-    new Servidor_Licenciamento(_Config, _BD).Iniciar();
+    // processo mas independente da conexao com o Core. Uma falha aqui (ex.: certificado
+    // ausente com GerarSeAusente=false) nao deve abortar o bootstrap dos sockets admin.
+    try {
+        new Servidor_Licenciamento(_Config, _BD).Iniciar();
+    } catch (err) {
+        _Logger.Error('[Licenciamento] API nao iniciada', err);
+    }
 
     InicializarSocketServer().then(async () => {
         new Socket_WebFiles(_Config, _BD, _Core_Conection).Inicializar_Listeners();
