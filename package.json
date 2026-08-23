@@ -44,7 +44,8 @@
     "test:watch": "vitest",
     "build": "npx tsc --build --clean && npx tsc --build",
     "build-run": "npm run build && npm run dist",
-    "dist": "node dist/Server/WSCore_Mod_GeradorLicencas.js"
+    "dist": "node dist/Server/WSCore_Mod_GeradorLicencas.js",
+    "gerar-chaves": "ts-node Server/Controllers/Lib/Licenca/GerarChaves.ts"
   },
   "repository": {
     "type": "git",
