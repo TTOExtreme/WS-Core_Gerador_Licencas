@@ -397,6 +397,40 @@ if (!window._WSGL_Cadastros_Registrada) {
                 { id: 'aprovar', label: 'Aprovar', icone: 'verified', evento: 'aprovar', permissao: 'wsgl/clusters.aprovar' },
                 { id: 'bloquear', label: 'Bloquear', icone: 'block', evento: 'bloquear', permissao: 'wsgl/clusters.bloquear' },
             ],
+            // 'acoes' (acima) só cobre eventos que recebem { id }; Substituir precisa de
+            // campos extras (cluster de destino + justificativa) coletados em modal, então
+            // usa o mecanismo de escape 'botoesExtras' (botão completo) já suportado por _wsglConfig.
+            botoesExtras: [
+                {
+                    id: 'substituir', label: 'Substituir', icone: 'sync_alt', tipo: 'padrao', grupo: 2, requerSelecao: -1,
+                    permissao: 'wsgl/clusters.substituir',
+                    title: 'Migra as licenças ativas do cluster selecionado para outro cluster aprovado',
+                    async aoClicar(sel, _dados, tela) {
+                        const reg = sel[0];
+                        const vals = await WSGL_ModalFormulario.Abrir({
+                            titulo: 'Substituir Cluster',
+                            campos: [
+                                { chave: 'clusterNovoId', label: 'Novo Cluster', tipo: 'referencia', entidade: 'clusters', rotulo: 'nome', obrigatorio: true },
+                                { chave: 'justificativa', label: 'Justificativa', tipo: 'texto', obrigatorio: true },
+                            ],
+                            valores: {},
+                        });
+                        if (!vals) return;
+                        _WebSocket.Emit('wsgl/clusters.substituir', 'WSCore_GeradorLicencas/*', {
+                            clusterAntigoId: reg.id, clusterNovoId: vals.clusterNovoId, justificativa: vals.justificativa,
+                        }, (r) => {
+                            if (r && r.status === 'OK') {
+                                tela.LimparSelecao();
+                                tela.Recarregar();
+                                _Notificacoes.Adicionar_Notificacao(Date.now(), 'Cluster substituído com sucesso', { Titulo: 'Sucesso', Cor: '#26a69a', Background: '#1a2e2e' }, '', {});
+                                _LogAtividades.Registrar('Substituição de cluster', 'aviso');
+                            } else {
+                                _Notificacoes.Adicionar_Notificacao(Date.now(), (r && r.mensagem) || 'Erro ao substituir cluster', { Titulo: 'Erro', Cor: '#ef5350', Background: '#2e1a1a' }, '', {});
+                            }
+                        });
+                    },
+                },
+            ],
         },
     };
 

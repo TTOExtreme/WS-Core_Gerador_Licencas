@@ -129,6 +129,104 @@ function _configLicencas() {
                     });
                 },
             },
+
+            // ── Grupo 2 ─────────────────────────────────────────
+            {
+                id: "renovar",
+                label: "Renovar",
+                icone: "autorenew",
+                tipo: "padrao",
+                grupo: 2,
+                requerSelecao: -1,
+                permissao: "wsgl/licencas.renovar",
+                title: "Renova a licença selecionada por mais 30 dias",
+                async aoClicar(sel, _dados, tela) {
+                    _WebSocket.Emit("wsgl/licencas.renovar", "WSCore_GeradorLicencas/*", { id: sel[0].id }, (r) => {
+                        if (r && r.status === "OK") {
+                            tela.LimparSelecao();
+                            tela.Recarregar();
+                            notificar("Licença renovada com sucesso", true);
+                            _LogAtividades.Registrar("Licença renovada", "info");
+                        } else {
+                            notificar((r && r.mensagem) || "Erro ao renovar licença", false);
+                        }
+                    });
+                },
+            },
+            {
+                id: "estender",
+                label: "Estender",
+                icone: "more_time",
+                tipo: "padrao",
+                grupo: 2,
+                requerSelecao: -1,
+                permissao: "wsgl/licencas.estender",
+                title: "Estende temporariamente a validade da licença selecionada",
+                async aoClicar(sel, _dados, tela) {
+                    const reg = sel[0];
+                    const vals = await window.WSGL_ModalFormulario.Abrir({
+                        titulo: "Estender Licença",
+                        campos: [
+                            { chave: "dias", label: "Dias de extensão", tipo: "numero", obrigatorio: true },
+                            { chave: "motivo", label: "Motivo", tipo: "texto", obrigatorio: true },
+                        ],
+                        valores: {},
+                    });
+                    if (!vals) return;
+                    _WebSocket.Emit("wsgl/licencas.estender", "WSCore_GeradorLicencas/*", { id: reg.id, dias: vals.dias, motivo: vals.motivo }, (r) => {
+                        if (r && r.status === "OK") {
+                            tela.LimparSelecao();
+                            tela.Recarregar();
+                            notificar("Licença estendida com sucesso", true);
+                            _LogAtividades.Registrar("Licença estendida", "info");
+                        } else {
+                            notificar((r && r.mensagem) || "Erro ao estender licença", false);
+                        }
+                    });
+                },
+            },
+
+            // ── Grupo 3 ─────────────────────────────────────────
+            {
+                id: "revogar",
+                label: "Revogar",
+                icone: "block",
+                tipo: "perigo",
+                grupo: 3,
+                requerSelecao: -1,
+                permissao: "wsgl/licencas.revogar",
+                title: "Revoga a licença selecionada (irreversível)",
+                async aoClicar(sel, _dados, tela) {
+                    const reg = sel[0];
+                    const confirmado = await window.WSCore_ModalConfirmacao.Abrir({
+                        tipo: "aviso",
+                        titulo: "Revogar licença",
+                        subtitulo: "A licença deixará de ser válida para a API de validação. Esta ação não pode ser desfeita.",
+                        registros: [{ label: reg.lic_id || ("#" + reg.id) }],
+                        textoConfirmacao: reg.lic_id || "REVOGAR",
+                        textoBotao: "Revogar licença",
+                    });
+                    if (!confirmado) return;
+                    const vals = await window.WSGL_ModalFormulario.Abrir({
+                        titulo: "Motivo da Revogação",
+                        campos: [
+                            { chave: "motivo", label: "Motivo", tipo: "texto", obrigatorio: true },
+                        ],
+                        valores: {},
+                    });
+                    if (!vals) return;
+                    _WebSocket.Emit("wsgl/licencas.revogar", "WSCore_GeradorLicencas/*", { id: reg.id, motivo: vals.motivo }, (r) => {
+                        if (r && r.status === "OK") {
+                            tela.LimparSelecao();
+                            tela.Recarregar();
+                            notificar("Licença revogada com sucesso", true);
+                            _LogAtividades.Registrar("Licença revogada", "aviso");
+                        } else {
+                            notificar((r && r.mensagem) || "Erro ao revogar licença", false);
+                        }
+                    });
+                },
+            },
         ],
     };
 }
