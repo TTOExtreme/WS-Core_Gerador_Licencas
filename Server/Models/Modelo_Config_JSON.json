@@ -20,12 +20,6 @@
         "LocalArquivo": "/var/log/wscore_rh/",
         "Rotatividade": 86400
     },
-    "Ponto": {
-        "Porta": 8778,
-        "Cert": { "Key": "./Certs/ponto.key", "Cert": "./Certs/ponto.crt", "GerarSeAusente": true },
-        "CookieNome": "WSRH_PONTO",
-        "CookieSeguro": true
-    },
     "Licenciamento": {
         "Porta": 8779,
         "Cert": { "Key": "./Certs/licenciamento.key", "Cert": "./Certs/licenciamento.crt", "GerarSeAusente": true }

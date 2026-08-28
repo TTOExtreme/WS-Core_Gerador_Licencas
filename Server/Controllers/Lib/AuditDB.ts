@@ -12,11 +12,11 @@ interface DadosAuditoria {
 
 export class AuditDB {
     private static _bd: Conector_Mysql | null = null;
-    private static _tabela: string = '_Mod_WSRH_Auditoria';
+    private static _tabela: string = '_Mod_Auditoria';
 
     /** Inicializa o singleton. Chamar uma vez após o banco estar pronto.
      *  `tabela` permite que cada módulo grave na sua própria tabela de auditoria. */
-    static Inicializar(bd: Conector_Mysql, tabela: string = '_Mod_WSRH_Auditoria'): void {
+    static Inicializar(bd: Conector_Mysql, tabela: string = '_Mod_Auditoria'): void {
         AuditDB._bd = bd;
         AuditDB._tabela = tabela;
     }

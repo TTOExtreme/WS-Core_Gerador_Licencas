@@ -8,8 +8,6 @@ class Modelo_Config {
     public Core: Config_Core = new Config_Core();
     public BD: Config_BD = new Config_BD();
     public LOG: Config_Log = new Config_Log();
-    /** Configuração do Portal de Ponto (servidor HTTPS apartado, mesmo processo). */
-    public Ponto: Config_Ponto = new Config_Ponto();
     public Licenciamento: Config_Licenciamento = new Config_Licenciamento();
 }
 
@@ -39,25 +37,6 @@ class Config_Log {
     public Rotatividade: number = 86400;
 }
 
-class Config_Ponto {
-    /** Porta HTTPS do Portal de Ponto (servidor apartado, mesmo processo do módulo). */
-    public Porta: number = 8778;
-    public Cert: Config_Ponto_Cert = new Config_Ponto_Cert();
-    /** Nome do cookie de sessão do portal. */
-    public CookieNome: string = "WSRH_PONTO";
-    /** Marca o cookie como Secure (exige HTTPS). */
-    public CookieSeguro: boolean = true;
-}
-
-class Config_Ponto_Cert {
-    /** Caminho do arquivo da chave privada TLS. */
-    public Key: string = "./Certs/ponto.key";
-    /** Caminho do arquivo do certificado TLS. */
-    public Cert: string = "./Certs/ponto.crt";
-    /** Gera um par self-signed automaticamente se os arquivos não existirem. */
-    public GerarSeAusente: boolean = true;
-}
-
 class Config_Licenciamento {
     /** Porta HTTPS da API de Licenciamento (servidor apartado, mesmo processo). */
     public Porta: number = 8779;
@@ -69,4 +48,4 @@ class Config_Licenciamento_Cert {
     public GerarSeAusente: boolean = true;
 }
 
-export { Modelo_Config, Config_Core, Config_Ponto, Config_Licenciamento }
+export { Modelo_Config, Config_Core, Config_Licenciamento }
