@@ -43,8 +43,10 @@ class Config_Licenciamento {
     public Cert: Config_Licenciamento_Cert = new Config_Licenciamento_Cert();
 }
 class Config_Licenciamento_Cert {
-    public Key: string = "./Certs/licenciamento.key";
-    public Cert: string = "./Certs/licenciamento.crt";
+    /** Nome do arquivo da chave — resolvido junto ao config.cfg no boot (caminho estável). */
+    public Key: string = "licenciamento.key";
+    /** Nome do arquivo do certificado — resolvido junto ao config.cfg no boot. */
+    public Cert: string = "licenciamento.crt";
     public GerarSeAusente: boolean = true;
 }
 

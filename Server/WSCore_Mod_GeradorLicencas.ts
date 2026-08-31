@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import * as path from 'path';
 import { Logger } from './Controllers/Lib/Logger';
 import { Modelo_Config } from './Models/Modelo_Configuracao';
 import Modelo_Config_JSON from './Models/Modelo_Config_JSON.json';
@@ -20,6 +21,7 @@ import { Socket_Dashboard } from './Controllers/_WSGL_Dashboard/Socket_Dashboard
 import { Socket_Monitoramento } from './Controllers/_WSGL_Monitoramento/Socket_Monitoramento';
 import { Socket_Auditoria } from './Controllers/_WSGL_Auditoria/Socket_Auditoria';
 import { Socket_Certificado } from './Controllers/_WSGL_Certificado/Socket_Certificado';
+import { resolverCaminhosCert } from './Controllers/Lib/Certificado';
 
 const _Logger: Logger = new Logger();
 let _Config: Modelo_Config;
@@ -47,6 +49,14 @@ function InicializarConfiguracao() {
             (_Config as unknown as Record<string, unknown>)[secao as string] = { ...(defaultSecao as object), ...((discoSecao as object) ?? {}) };
         }
     });
+
+    // Ancora o certificado da API HTTPS na pasta do config.cfg (caminho estável, independente
+    // do cwd): no boot, GarantirCertificado carrega se existir ou gera e grava aqui. Resolvido
+    // uma única vez para que a API e a tela de exportação leiam sempre o MESMO arquivo.
+    const baseConfig = __dirname + '/config';
+    const certResolvido = resolverCaminhosCert(_Config.Licenciamento.Cert, baseConfig);
+    _Config.Licenciamento.Cert.Cert = certResolvido.Cert;
+    _Config.Licenciamento.Cert.Key = certResolvido.Key;
 }
 
 function InicializarBanco(): Promise<void> {

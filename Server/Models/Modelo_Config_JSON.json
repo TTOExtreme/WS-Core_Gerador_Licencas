@@ -22,6 +22,6 @@
     },
     "Licenciamento": {
         "Porta": 8779,
-        "Cert": { "Key": "./Certs/licenciamento.key", "Cert": "./Certs/licenciamento.crt", "GerarSeAusente": true }
+        "Cert": { "Key": "licenciamento.key", "Cert": "licenciamento.crt", "GerarSeAusente": true }
     }
 }
