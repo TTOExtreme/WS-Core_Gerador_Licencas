@@ -121,6 +121,18 @@ export class Config_Licencas {
     return rows.map((r) => r.jws);
   }
 
+  /** API: metadados do cluster para o Licenciador saber se está autorizado (aprovado) e seu nome/ambiente. */
+  public async InfoClusterPorUid(cluster_uid: string): Promise<{ aprovado: boolean; nome: string | null; ambiente: string | null }> {
+    const rows = Object.assign([], await this._BD.Query(
+      `SELECT clu.nome, clu.situacao, amb.tipo AS ambiente
+         FROM _Mod_WSGL_Clusters clu
+         LEFT JOIN _Mod_WSGL_Ambientes amb ON amb.id = clu.ambiente_id
+        WHERE clu.cluster_uid = ? AND clu.excluido = 0 LIMIT 1`, [cluster_uid])
+    ) as Array<{ nome: string; situacao: string; ambiente: string | null }>;
+    if (rows.length === 0) return { aprovado: false, nome: null, ambiente: null };
+    return { aprovado: rows[0].situacao === 'aprovado', nome: rows[0].nome ?? null, ambiente: rows[0].ambiente ?? null };
+  }
+
   /** API: renova (re-assina por mais 30 dias) as licenças ativas de um cluster aprovado. Retorna os novos JWS. */
   public async RenovarPorClusterUid(cluster_uid: string): Promise<string[]> {
     const rows = Object.assign([], await this._BD.Query(

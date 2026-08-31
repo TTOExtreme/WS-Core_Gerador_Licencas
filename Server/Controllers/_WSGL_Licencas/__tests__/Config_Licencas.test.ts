@@ -99,6 +99,30 @@ describe('Config_Licencas ciclo de vida', () => {
   });
 });
 
+describe('Config_Licencas InfoClusterPorUid', () => {
+  it('devolve aprovado=true e nome/ambiente para cluster aprovado', async () => {
+    const fake = new FakeBD();
+    fake.enfileirar([{ nome: 'Cluster A', situacao: 'aprovado', ambiente: 'producao' }]);
+    const cfg = new Config_Licencas({} as Modelo_Config, fake.comoConector());
+    const info = await cfg.InfoClusterPorUid('uid-1');
+    expect(info).toEqual({ aprovado: true, nome: 'Cluster A', ambiente: 'producao' });
+  });
+  it('devolve aprovado=false para cluster não-aprovado', async () => {
+    const fake = new FakeBD();
+    fake.enfileirar([{ nome: 'Cluster B', situacao: 'pendente', ambiente: 'homologacao' }]);
+    const cfg = new Config_Licencas({} as Modelo_Config, fake.comoConector());
+    const info = await cfg.InfoClusterPorUid('uid-2');
+    expect(info.aprovado).toBe(false);
+  });
+  it('devolve aprovado=false quando o cluster não existe', async () => {
+    const fake = new FakeBD();
+    fake.enfileirar([]);
+    const cfg = new Config_Licencas({} as Modelo_Config, fake.comoConector());
+    const info = await cfg.InfoClusterPorUid('uid-x');
+    expect(info).toEqual({ aprovado: false, nome: null, ambiente: null });
+  });
+});
+
 describe('Config_Licencas telemetria', () => {
   it('LicencasAtivasPorClusterUid registra ultima_comunicacao do cluster', async () => {
     const fake = new FakeBD();
