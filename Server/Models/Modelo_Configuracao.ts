@@ -41,6 +41,9 @@ class Config_Licenciamento {
     /** Porta HTTPS da API de Licenciamento (servidor apartado, mesmo processo). */
     public Porta: number = 8779;
     public Cert: Config_Licenciamento_Cert = new Config_Licenciamento_Cert();
+    /** Arquivo da chave privada Ed25519 (PKCS8 PEM) de assinatura de licenças — resolvido
+     *  junto ao config.cfg no boot. A env WSGL_LICENCA_CHAVE_PRIVADA, se definida, tem prioridade. */
+    public ChavePrivadaArquivo: string = "licenca_privada.pem";
 }
 class Config_Licenciamento_Cert {
     /** Nome do arquivo da chave — resolvido junto ao config.cfg no boot (caminho estável). */

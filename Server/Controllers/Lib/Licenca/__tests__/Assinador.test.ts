@@ -66,10 +66,13 @@ describe('assinarLicenca', () => {
 
   it('lança se a chave privada não estiver configurada', async () => {
     const bak = process.env.WSGL_LICENCA_CHAVE_PRIVADA;
+    const bakArq = process.env.WSGL_LICENCA_CHAVE_PRIVADA_ARQUIVO;
     delete process.env.WSGL_LICENCA_CHAVE_PRIVADA;
+    delete process.env.WSGL_LICENCA_CHAVE_PRIVADA_ARQUIVO;
     await expect(assinarLicenca(claimsExemplo())).rejects.toMatchObject({
-      mensagem: 'Chave privada de licença ausente (env WSGL_LICENCA_CHAVE_PRIVADA)',
+      mensagem: expect.stringContaining('Chave privada de licença ausente'),
     });
     process.env.WSGL_LICENCA_CHAVE_PRIVADA = bak;
+    if (bakArq !== undefined) process.env.WSGL_LICENCA_CHAVE_PRIVADA_ARQUIVO = bakArq;
   });
 });

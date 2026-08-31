@@ -57,6 +57,14 @@ function InicializarConfiguracao() {
     const certResolvido = resolverCaminhosCert(_Config.Licenciamento.Cert, baseConfig);
     _Config.Licenciamento.Cert.Cert = certResolvido.Cert;
     _Config.Licenciamento.Cert.Key = certResolvido.Key;
+
+    // Aponta o loader da chave de assinatura de licenças para um arquivo junto ao config.cfg.
+    // A env WSGL_LICENCA_CHAVE_PRIVADA (PEM inline), se definida pelo operador, tem prioridade;
+    // este ARQUIVO é o fallback de dev/homolog (evita PEM multilinha no terminal).
+    const arqChave = _Config.Licenciamento.ChavePrivadaArquivo;
+    if (arqChave && !process.env.WSGL_LICENCA_CHAVE_PRIVADA_ARQUIVO) {
+        process.env.WSGL_LICENCA_CHAVE_PRIVADA_ARQUIVO = path.isAbsolute(arqChave) ? arqChave : path.resolve(baseConfig, arqChave);
+    }
 }
 
 function InicializarBanco(): Promise<void> {
