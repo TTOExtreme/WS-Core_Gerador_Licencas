@@ -1,6 +1,7 @@
 // WSGL_Dashboard.js — painel geral de indicadores do modulo Gerador de Licencas (Fase G4)
-// Tela customizada (Instrucao_Modulo_Tela.md §9): nao usa Controle_Tela_Tabela pois o
-// layout e uma grade de cards de indicadores, sem tabela/paginacao/busca.
+// Tela customizada de cards (sem tabela). Usa Controle_Tela_Conteudo (padrao de
+// WSCore_Financeiro/Dashboard.js): a classe monta o conteudo DENTRO da area da aba via
+// renderizar(container) — NAO manipular document.body/Controle_Tela manualmente.
 // Guard contra dupla execucao.
 if (!window._TelaWSGLDashboard_Registrada) {
     window._TelaWSGLDashboard_Registrada = true;
@@ -23,42 +24,36 @@ const _WSGL_DASHBOARD_CARDS = [
 ];
 
 function _WSGL_AbrirTelaDashboard() {
-    const ID_TELA = "wsgl_dash_" + _GeraString().substring(0, 14);
-    const tela = new Controle_Tela(ID_TELA, "Dashboard");
-
-    Adicionar_Aba_Superior(
-        ID_TELA, "Dashboard",
-        window._Favoritos?.EhFavoritado(ID_TELA) ?? false,
-        () => tela.Abrir_Tela()
-    );
-
-    tela.instancia_tela = document.createElement("div");
-    tela.instancia_tela.id = ID_TELA;
-    tela.instancia_tela.className = "WSCore_tela_holder hide";
-    tela.instancia_tela.style.cssText = "padding:20px;font-family:var(--font_principal);color:var(--texto_primario);box-sizing:border-box;";
-
-    const titulo = document.createElement("h2");
-    titulo.textContent = "Dashboard de Licenciamento";
-    titulo.style.cssText = "margin:0 0 4px 0;font-size:18px;color:var(--texto_primario);";
-    tela.instancia_tela.appendChild(titulo);
-
-    const subtitulo = document.createElement("div");
-    subtitulo.textContent = "Visão geral de clientes, contratos, ambientes e licenças";
-    subtitulo.style.cssText = "margin:0 0 20px 0;font-size:12px;color:var(--texto_secundario);";
-    tela.instancia_tela.appendChild(subtitulo);
-
-    const grid = document.createElement("div");
-    grid.id = "wsgl_dash_grid";
-    grid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:14px;";
-    tela.instancia_tela.appendChild(grid);
-
-    _WSGL_RenderizarCardsCarregando(grid);
-
-    document.body.appendChild(tela.instancia_tela);
-    tela.Abrir_Tela();
+    const tela = new Controle_Tela_Conteudo({
+        titulo: "Dashboard de Licenciamento",
+        icone: "insights",
+        instanciaUnica: true,
+        chaveUnica: "wsgl_dashboard",
+        botoes: [
+            { id: "atualizar", label: "Atualizar", icone: "refresh", tipo: "padrao", grupo: 1, requerSelecao: 0, aoClicar: () => _WSGL_CarregarDashboard() },
+        ],
+        renderizar(container) {
+            window._WSGLDashCtx = { container };
+            container.style.cssText = "padding:20px;font-family:var(--font_principal);color:var(--texto_primario);box-sizing:border-box;overflow:auto;";
+            container.innerHTML =
+                '<h2 style="margin:0 0 4px 0;font-size:18px;color:var(--texto_primario);">Dashboard de Licenciamento</h2>' +
+                '<div style="margin:0 0 20px 0;font-size:12px;color:var(--texto_secundario);">Visão geral de clientes, contratos, ambientes e licenças</div>' +
+                '<div id="wsgl_dash_grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:14px;"></div>';
+            _WSGL_CarregarDashboard();
+        },
+    });
+    tela.Abrir();
     _LogAtividades.Registrar("Aberto: Dashboard", "info");
+}
 
+function _WSGL_CarregarDashboard() {
+    const ctx = window._WSGLDashCtx;
+    if (!ctx || !ctx.container || !ctx.container.isConnected) return;
+    const grid = ctx.container.querySelector("#wsgl_dash_grid");
+    if (!grid) return;
+    _WSGL_RenderizarCardsCarregando(grid);
     _WebSocket.Emit("wsgl/dashboard.resumo", "WSCore_GeradorLicencas/*", {}, (r) => {
+        if (!ctx.container.isConnected) return;
         // Socket_Dashboard responde { status:'OK', dados:{...indicadores} }.
         const resumo = r && (r.dados || r);
         if (r && r.status === "OK" && resumo) {
