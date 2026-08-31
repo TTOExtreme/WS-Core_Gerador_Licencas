@@ -40,6 +40,24 @@ describe('Config_Licencas.Emitir', () => {
     const jwsParam = insert!.valores.find((v) => typeof v === 'string' && (v as string).split('.').length === 3);
     expect(jwsParam).toBeDefined();
   });
+
+  it('INSERT tem colunas e valores em contagem igual (regressão de count mismatch — erro 1136)', async () => {
+    const fake = new FakeBD();
+    fake.enfileirar([{ id: 4, cluster_uid: 'uid-4', situacao: 'aprovado' }]);
+    fake.enfileirar([{ id: 3, tipo: 'producao' }]);
+    fake.enfileirar({ insertId: 55 });
+    fake.enfileirar([{ id: 55, lic_id: 'x', jws: 'j', situacao: 'ativa' }]);
+    const cfg = new Config_Licencas({} as Modelo_Config, fake.comoConector());
+    await cfg.Emitir(novaEntrada(), 9);
+    const insert = fake.queries.find((q) => q.sql.includes('INSERT INTO _Mod_WSGL_Licencas'));
+    expect(insert).toBeDefined();
+    const sql = insert!.sql;
+    // Invariante que evita o erro 1136/tipo do MySQL: o nº de placeholders (?) tem de
+    // bater exatamente com o nº de parâmetros vinculados (senão os valores desalinham
+    // das colunas — ex.: um Date acaba numa coluna BIGINT / um int numa TIMESTAMP).
+    const nPlaceholders = (sql.match(/\?/g) || []).length;
+    expect(nPlaceholders).toBe(insert!.valores.length);
+  });
 });
 
 describe('Config_Licencas ciclo de vida', () => {

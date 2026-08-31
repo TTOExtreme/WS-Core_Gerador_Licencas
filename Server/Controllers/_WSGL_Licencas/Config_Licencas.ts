@@ -65,7 +65,7 @@ export class Config_Licencas {
       `INSERT INTO _Mod_WSGL_Licencas (lic_id, tipo, cliente_id, contrato_id, ambiente_id, cluster_id, modulo, instancia,
          nivel, limites, jws, kid, situacao, tipo_emissao, emitida_em, expira_em,
          criado_em, criado_por, editado_por, excluido_por, ativado_em, ativado_por, inativado_por, ativo, excluido)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ativa', ?, ?, ?, ?, ?, 0, 0, ?, ?, 0, 1, 0)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ativa', ?, ?, ?, ?, ?, ?, 0, ?, ?, 0, 1, 0)`,
       [lic_id, d.tipo, d.cliente_id, d.contrato_id ?? null, d.ambiente_id, d.cluster_id, d.modulo ?? null, d.instancia ?? null,
        d.nivel ?? null, d.limites ? JSON.stringify(d.limites) : null, jws, kidAtual(), d.tipo_emissao ?? 'nova', agora, expira,
        agora, emitido_por, emitido_por, agora, emitido_por]) as mysql.OkPacket;
