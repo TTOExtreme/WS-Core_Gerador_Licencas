@@ -61,3 +61,7 @@ INSERT IGNORE INTO _Permissoes (codigo,nome,descricao,modulo) VALUES
 ("tela/wsgl/dashboard","Tela Dashboard","Painel geral de licenciamento","WSCore_GeradorLicencas"),
 ("tela/wsgl/monitoramento","Tela Monitoramento","Monitoramento de ambientes/clusters","WSCore_GeradorLicencas"),
 ("tela/wsgl/auditoria","Tela Auditoria","Consulta de auditoria do Licenciador","WSCore_GeradorLicencas");
+
+-- Permissao da tela de Certificado da API (Fase cert-pinning)
+INSERT IGNORE INTO _Permissoes (codigo,nome,descricao,modulo) VALUES
+("tela/wsgl/certificado","Tela Certificado","Exportacao do certificado publico da API de Licenciamento","WSCore_GeradorLicencas");

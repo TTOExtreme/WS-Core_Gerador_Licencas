@@ -23,3 +23,8 @@ INSERT IGNORE INTO _Menus (codigo,nome,descricao,menu_pai,versao,permissao,modul
 ("wsgl/monitoramento","Monitoramento","Ambientes e clusters dos clientes","wsgl","1.1.0","tela/wsgl/monitoramento","WSCore_GeradorLicencas","open/wsgl/monitoramento","./modulos/WSCore_GeradorLicencas/js/WSGL_Monitoramento.js","{\"menu_icon\":\"monitor_heart\"}"),
 ("wsgl/auditoria","Auditoria","Eventos de auditoria do Licenciador","wsgl","1.1.0","tela/wsgl/auditoria","WSCore_GeradorLicencas","open/wsgl/auditoria","./modulos/WSCore_GeradorLicencas/js/WSGL_Auditoria.js","{\"menu_icon\":\"fact_check\"}");
 UPDATE _Menus SET categoria='dashboards' WHERE codigo IN ('wsgl/dashboard','wsgl/monitoramento','wsgl/auditoria');
+
+-- Tela de Certificado da API (cert-pinning): exporta o cert publico para os Licenciadores
+INSERT IGNORE INTO _Menus (codigo,nome,descricao,menu_pai,versao,permissao,modulo,evento,load_dependencia,configuracao) VALUES
+("wsgl/certificado","Certificado da API","Exporta o certificado publico da API de Licenciamento","wsgl","1.1.0","tela/wsgl/certificado","WSCore_GeradorLicencas","open/wsgl/certificado","./modulos/WSCore_GeradorLicencas/js/WSGL_Certificado.js","{\"menu_icon\":\"security\"}");
+UPDATE _Menus SET categoria='dashboards' WHERE codigo IN ('wsgl/certificado');
