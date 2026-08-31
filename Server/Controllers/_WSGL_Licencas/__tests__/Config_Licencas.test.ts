@@ -41,6 +41,20 @@ describe('Config_Licencas.Emitir', () => {
     expect(jwsParam).toBeDefined();
   });
 
+  it('compõe limites.vagas a partir do atalho vagas do formulário', async () => {
+    const fake = new FakeBD();
+    fake.enfileirar([{ id: 4, cluster_uid: 'uid-4', situacao: 'aprovado' }]);
+    fake.enfileirar([{ id: 3, tipo: 'producao' }]);
+    fake.enfileirar({ insertId: 60 });
+    fake.enfileirar([{ id: 60, lic_id: 'x', jws: 'j', situacao: 'ativa' }]);
+    const cfg = new Config_Licencas({} as Modelo_Config, fake.comoConector());
+    await cfg.Emitir({ ...novaEntrada(), tipo: TipoLicenca.USO_MULTIPLO, vagas: 5 } as never, 9);
+    const insert = fake.queries.find((q) => q.sql.includes('INSERT INTO _Mod_WSGL_Licencas'));
+    const limitesParam = insert!.valores.find((v) => typeof v === 'string' && (v as string).includes('"vagas"'));
+    expect(limitesParam).toBeDefined();
+    expect(JSON.parse(limitesParam as string)).toMatchObject({ vagas: 5 });
+  });
+
   it('INSERT tem colunas e valores em contagem igual (regressão de count mismatch — erro 1136)', async () => {
     const fake = new FakeBD();
     fake.enfileirar([{ id: 4, cluster_uid: 'uid-4', situacao: 'aprovado' }]);

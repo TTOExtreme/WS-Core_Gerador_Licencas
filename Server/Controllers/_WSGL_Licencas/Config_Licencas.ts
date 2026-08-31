@@ -17,6 +17,9 @@ export interface DadosEmissao {
   instancia?: string | null;
   nivel?: NivelComercial | null;
   limites?: LicencaLimites | null;
+  /** Atalhos do formulário (planos) que compõem `limites` quando este não é enviado. */
+  vagas?: number | null;
+  instancias?: number | null;
   validadeDias?: number;
   tipo_emissao?: 'nova' | 'renovacao' | 'substituicao' | 'extensao';
 }
@@ -49,12 +52,13 @@ export class Config_Licencas {
     const ambienteTipo = ambRows[0].tipo as TipoAmbiente;
 
     const lic_id = randomUUID();
+    const limites = this._montarLimites(d);
     const claims: LicencaClaims = {
       lic_id, tipo: d.tipo, cliente: String(d.cliente_id),
       contrato: d.contrato_id != null ? String(d.contrato_id) : null,
       ambiente: ambienteTipo, cluster_id: cluster_uid,
       modulo: d.modulo ?? null, instancia: d.instancia ?? null,
-      nivel: d.nivel ?? null, limites: d.limites ?? null,
+      nivel: d.nivel ?? null, limites,
     };
     const dias = d.validadeDias ?? 30;
     const jws = await assinarLicenca(claims, { validadeDias: dias });
@@ -67,9 +71,18 @@ export class Config_Licencas {
          criado_em, criado_por, editado_por, excluido_por, ativado_em, ativado_por, inativado_por, ativo, excluido)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ativa', ?, ?, ?, ?, ?, ?, 0, ?, ?, 0, 1, 0)`,
       [lic_id, d.tipo, d.cliente_id, d.contrato_id ?? null, d.ambiente_id, d.cluster_id, d.modulo ?? null, d.instancia ?? null,
-       d.nivel ?? null, d.limites ? JSON.stringify(d.limites) : null, jws, kidAtual(), d.tipo_emissao ?? 'nova', agora, expira,
+       d.nivel ?? null, limites ? JSON.stringify(limites) : null, jws, kidAtual(), d.tipo_emissao ?? 'nova', agora, expira,
        agora, emitido_por, emitido_por, agora, emitido_por]) as mysql.OkPacket;
     return this.Buscar(r.insertId);
+  }
+
+  /** Compõe `limites` a partir de `d.limites` (explícito) ou dos atalhos numéricos vagas/instancias. */
+  private _montarLimites(d: DadosEmissao): LicencaLimites | null {
+    if (d.limites) return d.limites;
+    const vagas = d.vagas != null && Number(d.vagas) > 0 ? Number(d.vagas) : undefined;
+    const instancias = d.instancias != null && Number(d.instancias) > 0 ? Number(d.instancias) : undefined;
+    if (vagas === undefined && instancias === undefined) return null;
+    return { vagas, instancias };
   }
 
   public async Buscar(id: number): Promise<_Mod_WSGL_Licencas> {
