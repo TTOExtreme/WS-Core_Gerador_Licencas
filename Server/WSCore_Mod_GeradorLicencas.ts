@@ -21,6 +21,7 @@ import { Socket_Dashboard } from './Controllers/_WSGL_Dashboard/Socket_Dashboard
 import { Socket_Monitoramento } from './Controllers/_WSGL_Monitoramento/Socket_Monitoramento';
 import { Socket_Auditoria } from './Controllers/_WSGL_Auditoria/Socket_Auditoria';
 import { Socket_Certificado } from './Controllers/_WSGL_Certificado/Socket_Certificado';
+import { Socket_Modulos } from './Controllers/_WSGL_Modulos/Socket_Modulos';
 import { resolverCaminhosCert } from './Controllers/Lib/Certificado';
 
 const _Logger: Logger = new Logger();
@@ -137,6 +138,7 @@ InicializarBanco().then(async () => {
         new Socket_Monitoramento(_Config, _BD, _Core_Conection).Inicializar_Listeners();
         new Socket_Auditoria(_Config, _BD, _Core_Conection).Inicializar_Listeners();
         new Socket_Certificado(_Config, _BD, _Core_Conection).Inicializar_Listeners();
+        new Socket_Modulos(_Config, _BD, _Core_Conection).Inicializar_Listeners();
         _Logger.System('[Gerador] Módulo Gerador de Licenças inicializado.');
     }).catch((err) => _Logger.Error('Ao iniciar o Core', err));
 }).catch((err) => _Logger.Error('Ao conectar no banco de dados', err));

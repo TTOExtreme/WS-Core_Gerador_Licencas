@@ -41,6 +41,28 @@ describe('Config_Licencas.Emitir', () => {
     expect(jwsParam).toBeDefined();
   });
 
+  it('bloqueia emissão NOVA sobre versão descomissionada', async () => {
+    const fake = new FakeBD();
+    fake.enfileirar([{ id: 4, cluster_uid: 'uid-4', situacao: 'aprovado' }]); // cluster
+    fake.enfileirar([{ id: 3, tipo: 'producao' }]);                          // ambiente
+    fake.enfileirar([{ situacao: 'descomissionado' }]);                      // SituacaoDaVersao
+    const cfg = new Config_Licencas({} as Modelo_Config, fake.comoConector());
+    await expect(cfg.Emitir({ ...novaEntrada(), modulo: 'WSCore_Financeiro', versao: '1.0.0' } as never, 9))
+      .rejects.toMatchObject({ mensagem: expect.stringContaining('descomissionada') });
+  });
+
+  it('permite emissão NOVA sobre versão beta', async () => {
+    const fake = new FakeBD();
+    fake.enfileirar([{ id: 4, cluster_uid: 'uid-4', situacao: 'aprovado' }]); // cluster
+    fake.enfileirar([{ id: 3, tipo: 'producao' }]);                          // ambiente
+    fake.enfileirar([{ situacao: 'beta' }]);                                 // SituacaoDaVersao
+    fake.enfileirar({ insertId: 70 });                                       // INSERT
+    fake.enfileirar([{ id: 70, lic_id: 'x', jws: 'j', situacao: 'ativa' }]); // Buscar
+    const cfg = new Config_Licencas({} as Modelo_Config, fake.comoConector());
+    const lic = await cfg.Emitir({ ...novaEntrada(), modulo: 'WSCore_Financeiro', versao: '2.0.0-beta' } as never, 9);
+    expect(lic.id).toBe(70);
+  });
+
   it('compõe limites.vagas a partir do atalho vagas do formulário', async () => {
     const fake = new FakeBD();
     fake.enfileirar([{ id: 4, cluster_uid: 'uid-4', situacao: 'aprovado' }]);

@@ -6,6 +6,7 @@ import { _Mod_WSGL_Licencas } from '../../Models/DB/_Mod_WSGL_Licencas';
 import { assinarLicenca } from '../Lib/Licenca/Assinador';
 import { kidAtual } from '../Lib/Licenca/Chaves';
 import { LicencaClaims, TipoLicenca, NivelComercial, TipoAmbiente, LicencaLimites } from '../Lib/Licenca/Tipos';
+import { Config_Modulos } from '../_WSGL_Modulos/Config_Modulos';
 
 export interface DadosEmissao {
   tipo: TipoLicenca;
@@ -14,6 +15,7 @@ export interface DadosEmissao {
   ambiente_id: number;
   cluster_id: number;
   modulo?: string | null;
+  versao?: string | null;
   instancia?: string | null;
   nivel?: NivelComercial | null;
   limites?: LicencaLimites | null;
@@ -51,13 +53,23 @@ export class Config_Licencas {
     if (ambRows.length === 0) throw { mensagem: 'Ambiente não encontrado' };
     const ambienteTipo = ambRows[0].tipo as TipoAmbiente;
 
+    // Enforcement do catálogo: emissão NOVA não pode ser feita sobre uma versão descomissionada
+    // do módulo. Renovação/substituição/extensão NUNCA passam por aqui (não bloqueiam).
+    const ehNova = (d.tipo_emissao ?? 'nova') === 'nova';
+    if (ehNova && d.modulo && d.versao) {
+      const situacao = await new Config_Modulos(this._Config, this._BD).SituacaoDaVersao(d.modulo, d.versao);
+      if (situacao === 'descomissionado') {
+        throw { mensagem: `Versão ${d.versao} do módulo ${d.modulo} está descomissionada: não é possível emitir novas licenças (renovação continua permitida).` };
+      }
+    }
+
     const lic_id = randomUUID();
     const limites = this._montarLimites(d);
     const claims: LicencaClaims = {
       lic_id, tipo: d.tipo, cliente: String(d.cliente_id),
       contrato: d.contrato_id != null ? String(d.contrato_id) : null,
       ambiente: ambienteTipo, cluster_id: cluster_uid,
-      modulo: d.modulo ?? null, instancia: d.instancia ?? null,
+      modulo: d.modulo ?? null, versao: d.versao ?? null, instancia: d.instancia ?? null,
       nivel: d.nivel ?? null, limites,
     };
     const dias = d.validadeDias ?? 30;
@@ -66,11 +78,11 @@ export class Config_Licencas {
     const expira = new Date(agora.getTime() + Math.min(dias, 30) * 86400 * 1000);
 
     const r = await this._BD.Query(
-      `INSERT INTO _Mod_WSGL_Licencas (lic_id, tipo, cliente_id, contrato_id, ambiente_id, cluster_id, modulo, instancia,
+      `INSERT INTO _Mod_WSGL_Licencas (lic_id, tipo, cliente_id, contrato_id, ambiente_id, cluster_id, modulo, versao, instancia,
          nivel, limites, jws, kid, situacao, tipo_emissao, emitida_em, expira_em,
          criado_em, criado_por, editado_por, excluido_por, ativado_em, ativado_por, inativado_por, ativo, excluido)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ativa', ?, ?, ?, ?, ?, ?, 0, ?, ?, 0, 1, 0)`,
-      [lic_id, d.tipo, d.cliente_id, d.contrato_id ?? null, d.ambiente_id, d.cluster_id, d.modulo ?? null, d.instancia ?? null,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ativa', ?, ?, ?, ?, ?, ?, 0, ?, ?, 0, 1, 0)`,
+      [lic_id, d.tipo, d.cliente_id, d.contrato_id ?? null, d.ambiente_id, d.cluster_id, d.modulo ?? null, d.versao ?? null, d.instancia ?? null,
        d.nivel ?? null, limites ? JSON.stringify(limites) : null, jws, kidAtual(), d.tipo_emissao ?? 'nova', agora, expira,
        agora, emitido_por, emitido_por, agora, emitido_por]) as mysql.OkPacket;
     return this.Buscar(r.insertId);
@@ -189,7 +201,7 @@ export class Config_Licencas {
       lic_id: l.lic_id, tipo: l.tipo as TipoLicenca, cliente: String(l.cliente_id),
       contrato: l.contrato_id != null ? String(l.contrato_id) : null,
       ambiente: await this._ambienteTipo(l.ambiente_id), cluster_id: cluster_uid,
-      modulo: l.modulo, instancia: l.instancia, nivel: (l.nivel as NivelComercial | null), limites,
+      modulo: l.modulo, versao: l.versao, instancia: l.instancia, nivel: (l.nivel as NivelComercial | null), limites,
     };
     return assinarLicenca(claims, { validadeDias: Math.min(dias, 30) });
   }

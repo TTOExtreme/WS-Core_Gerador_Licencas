@@ -46,6 +46,8 @@ export interface LicencaClaims {
   ambiente: TipoAmbiente;
   cluster_id: string;
   modulo?: string | null;
+  /** Versão do módulo licenciado (casada ao catálogo de módulos/versões). */
+  versao?: string | null;
   instancia?: string | null;
   nivel?: NivelComercial | null;
   limites?: LicencaLimites | null;

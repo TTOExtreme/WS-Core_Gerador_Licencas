@@ -7,6 +7,7 @@ export class _Mod_WSGL_Licencas {
   ambiente_id!: number;
   cluster_id!: number;
   modulo!: string | null;
+  versao!: string | null;
   instancia!: string | null;
   nivel!: string | null;
   limites!: string | null;

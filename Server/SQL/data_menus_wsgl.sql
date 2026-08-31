@@ -17,6 +17,11 @@ INSERT IGNORE INTO _Menus (codigo,nome,descricao,menu_pai,versao,permissao,modul
 ("wsgl/licencas","Licenças","Emissao e consulta de licencas assinadas","wsgl","1.1.0","tela/wsgl/licencas","WSCore_GeradorLicencas","open/wsgl/licencas","./modulos/WSCore_GeradorLicencas/js/WSGL_Licencas.js","{\"menu_icon\":\"key\"}");
 UPDATE _Menus SET categoria='cadastros' WHERE codigo IN ('wsgl/licencas');
 
+-- Tela de Modulos & Versoes (catalogo): flags disponivel/beta/descomissionado
+INSERT IGNORE INTO _Menus (codigo,nome,descricao,menu_pai,versao,permissao,modulo,evento,load_dependencia,configuracao) VALUES
+("wsgl/modulos","Módulos & Versões","Catalogo de modulos e versoes com flags de disponibilidade","wsgl","1.1.0","tela/wsgl/modulos","WSCore_GeradorLicencas","open/wsgl/modulos","./modulos/WSCore_GeradorLicencas/js/WSGL_Modulos.js","{\"menu_icon\":\"widgets\"}");
+UPDATE _Menus SET categoria='cadastros' WHERE codigo IN ('wsgl/modulos');
+
 -- Telas de observabilidade (Fase G4): Dashboard, Monitoramento, Auditoria
 INSERT IGNORE INTO _Menus (codigo,nome,descricao,menu_pai,versao,permissao,modulo,evento,load_dependencia,configuracao) VALUES
 ("wsgl/dashboard","Dashboard","Visao geral do licenciamento","wsgl","1.1.0","tela/wsgl/dashboard","WSCore_GeradorLicencas","open/wsgl/dashboard","./modulos/WSCore_GeradorLicencas/js/WSGL_Dashboard.js","{\"menu_icon\":\"insights\"}"),

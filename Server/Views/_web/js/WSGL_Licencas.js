@@ -34,6 +34,26 @@ const _WSGL_NIVEIS_LICENCA = [
 ];
 
 /**
+ * Busca o catalogo de modulos/versoes para o select de emissao. Exclui versoes
+ * descomissionadas (nao permitem nova licenca); beta entra com marcador.
+ * Retorna [{ valor: "modulo_nome|||versao", label }]. Falha silenciosa -> lista vazia.
+ */
+function _WSGL_CarregarOpcoesModulo() {
+    return new Promise((resolve) => {
+        _WebSocket.Emit("wsgl/modulos.opcoes", "WSCore_GeradorLicencas/*", {}, (r) => {
+            if (!r || r.status !== "OK" || !Array.isArray(r.registros)) { resolve([]); return; }
+            const ops = r.registros
+                .filter((m) => m.situacao !== "descomissionado")
+                .map((m) => ({
+                    valor: m.modulo_nome + "|||" + m.versao,
+                    label: (m.modulo_titulo || m.modulo_nome) + " — v" + m.versao + (m.situacao === "beta" ? " [beta]" : ""),
+                }));
+            resolve(ops);
+        });
+    });
+}
+
+/**
  * Factory de configuracao — chamada a cada abertura para garantir
  * closures frescos por instancia.
  */
@@ -102,6 +122,7 @@ function _configLicencas() {
                 requerSelecao: 0,
                 title: "Emitir uma nova licença assinada",
                 async aoClicar(_sel, _dados, tela) {
+                    const opcoesModulo = await _WSGL_CarregarOpcoesModulo();
                     const vals = await window.WSGL_ModalFormulario.Abrir({
                         titulo: "Emitir Licença",
                         campos: [
@@ -110,13 +131,22 @@ function _configLicencas() {
                             { chave: "ambiente_id", label: "Ambiente", tipo: "referencia", entidade: "ambientes", rotulo: "nome", obrigatorio: true },
                             { chave: "cluster_id", label: "Cluster", tipo: "referencia", entidade: "clusters", rotulo: "nome", obrigatorio: true },
                             { chave: "contrato_id", label: "Contrato", tipo: "referencia", entidade: "contratos", rotulo: "codigo" },
-                            { chave: "modulo", label: "Módulo", tipo: "texto" },
+                            { chave: "modulo_versao", label: "Módulo / Versão", tipo: "select", opcoes: opcoesModulo },
                             { chave: "instancia", label: "Instância", tipo: "texto" },
                             { chave: "nivel", label: "Nível", tipo: "select", opcoes: _WSGL_NIVEIS_LICENCA },
+                            { chave: "vagas", label: "Vagas (usuários simultâneos)", tipo: "numero" },
+                            { chave: "instancias", label: "Instâncias (limite)", tipo: "numero" },
                         ],
                         valores: {},
                     });
                     if (!vals) return;
+                    // Divide o par selecionado "modulo|||versao" nos campos que o servidor espera.
+                    if (vals.modulo_versao) {
+                        const partes = String(vals.modulo_versao).split("|||");
+                        vals.modulo = partes[0] || null;
+                        vals.versao = partes[1] || null;
+                    }
+                    delete vals.modulo_versao;
                     _WebSocket.Emit("wsgl/licencas.emitir", "WSCore_GeradorLicencas/*", vals, (r) => {
                         if (r && r.status === "OK") {
                             tela.LimparSelecao();
