@@ -33,7 +33,24 @@ export async function carregarChavePrivada(): Promise<KeyLike> {
   if (!pem || !pem.trim()) {
     throw { mensagem: 'Chave privada de licença ausente (defina a env WSGL_LICENCA_CHAVE_PRIVADA ou crie o arquivo de chave junto ao config.cfg)' };
   }
-  return importPKCS8(pem, ALG_LICENCA);
+  return importPKCS8(normalizarPem(pem), ALG_LICENCA);
+}
+
+/**
+ * Normaliza um PEM que possa ter chegado na forma "escapada" (como o `gerar-chaves` imprime
+ * para secret managers): remove aspas externas e converte `\n`/`\r` literais em quebras reais.
+ * Um PEM já válido (com quebras reais e sem `\n` literal) passa intacto. Evita o erro comum
+ * `ERR_OSSL_ASN1_HEADER_TOO_LONG` quando a chave é colada na env/arquivo com escapes.
+ */
+export function normalizarPem(bruto: string): string {
+  let pem = bruto.trim();
+  if ((pem.startsWith('"') && pem.endsWith('"')) || (pem.startsWith("'") && pem.endsWith("'"))) {
+    pem = pem.slice(1, -1);
+  }
+  if (pem.indexOf('\\n') >= 0) {
+    pem = pem.replace(/\\r/g, '').replace(/\\n/g, '\n');
+  }
+  return pem.trim();
 }
 
 /**

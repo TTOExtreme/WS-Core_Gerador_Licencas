@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { gerarParDeChaves, carregarChavePrivada } from '../Chaves';
+import { gerarParDeChaves, carregarChavePrivada, normalizarPem } from '../Chaves';
 
 const ENV_PEM = 'WSGL_LICENCA_CHAVE_PRIVADA';
 const ENV_ARQ = 'WSGL_LICENCA_CHAVE_PRIVADA_ARQUIVO';
@@ -49,5 +49,24 @@ describe('carregarChavePrivada — env + arquivo', () => {
   it('lança { mensagem } quando não há env nem arquivo', async () => {
     limparEnv();
     await expect(carregarChavePrivada()).rejects.toMatchObject({ mensagem: expect.stringContaining('Chave privada de licença ausente') });
+  });
+
+  it('aceita a chave na forma ESCAPADA (JSON com \\n literais e aspas) sem ERR_OSSL_ASN1', async () => {
+    const { privadaPem } = await gerarParDeChaves();
+    limparEnv();
+    // Forma que o gerar-chaves imprime para secret managers: JSON.stringify(privadaPem)
+    // = string entre aspas com \n literais. Antes da normalização, quebrava o importPKCS8.
+    process.env[ENV_PEM] = JSON.stringify(privadaPem);
+    const chave = await carregarChavePrivada();
+    expect(chave).toBeDefined();
+  });
+});
+
+describe('normalizarPem', () => {
+  it('converte \\n literais e remove aspas externas; mantém PEM já válido intacto', () => {
+    const valido = '-----BEGIN PRIVATE KEY-----\nAAAA\n-----END PRIVATE KEY-----\n';
+    expect(normalizarPem(valido)).toBe(valido.trim());
+    const escapado = '"-----BEGIN PRIVATE KEY-----\\nAAAA\\n-----END PRIVATE KEY-----\\n"';
+    expect(normalizarPem(escapado)).toBe('-----BEGIN PRIVATE KEY-----\nAAAA\n-----END PRIVATE KEY-----');
   });
 });
