@@ -6,6 +6,8 @@ export class _Mod_WSGL_Clusters {
   cluster_uid!: string;
   situacao!: 'pendente' | 'aprovado' | 'inativo' | 'bloqueado';
   origem_rede!: string | null;
+  ip_origem!: string | null;
+  primeira_comunicacao!: Date | null;
   ultima_comunicacao!: Date | null;
   observacoes!: string | null;
   criado_em!: Date; criado_por!: number; editado_em!: Date; editado_por!: number;

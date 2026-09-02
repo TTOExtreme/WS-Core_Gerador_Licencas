@@ -5,6 +5,7 @@ import { Conector_Mysql } from '../Lib/Conector_Mysql';
 import { Logger } from '../Lib/Logger';
 import { GarantirCertificado } from '../Lib/Certificado';
 import { Config_Licencas } from './Config_Licencas';
+import { Config_Clusters } from '../_WSGL_Clusters/Config_Clusters';
 
 /**
  * API de Licenciamento — servidor HTTPS apartado (mesmo processo do Gerador),
@@ -16,12 +17,21 @@ export class Servidor_Licenciamento {
   private _BD: Conector_Mysql;
   private _Logger: Logger;
   private _Lic: Config_Licencas;
+  private _Clusters: Config_Clusters;
 
   constructor(_config: Modelo_Config, _bd: Conector_Mysql) {
     this._Config = _config;
     this._BD = _bd;
     this._Logger = new Logger();
     this._Lic = new Config_Licencas(_config, _bd);
+    this._Clusters = new Config_Clusters(_config, _bd);
+  }
+
+  /** Extrai o IP do cliente HTTPS (conexão direta), normalizando IPv4-mapeado em IPv6. */
+  private _ipDe(req: Request): string | null {
+    const bruto = req.socket?.remoteAddress ?? null;
+    if (!bruto) return null;
+    return bruto.startsWith('::ffff:') ? bruto.slice(7) : bruto;
   }
 
   public Iniciar(): void {
@@ -32,7 +42,11 @@ export class Servidor_Licenciamento {
     app.post('/api/licenciamento/validar', (req: Request, res: Response) => {
       const body = (req.body ?? {}) as { cluster_uid?: string };
       if (typeof body.cluster_uid !== 'string' || !body.cluster_uid) { res.status(400).json({ status: 'Erro', mensagem: 'cluster_uid obrigatório' }); return; }
-      Promise.all([this._Lic.LicencasAtivasPorClusterUid(body.cluster_uid), this._Lic.InfoClusterPorUid(body.cluster_uid)])
+      const uid = body.cluster_uid;
+      // Auto-registro: garante um cluster (pendente/não provisionado) e grava o IP de origem,
+      // ANTES de resolver licenças/estado, para o cluster aparecer para provisionamento.
+      this._Clusters.RegistrarContato(uid, this._ipDe(req))
+        .then(() => Promise.all([this._Lic.LicencasAtivasPorClusterUid(uid), this._Lic.InfoClusterPorUid(uid)]))
         .then(([licencas, cluster]) => res.json({ status: 'OK', licencas, cluster }))
         .catch((err) => res.status(500).json({ status: 'Erro', mensagem: (err as { mensagem?: string }).mensagem ?? 'Erro ao validar' }));
     });

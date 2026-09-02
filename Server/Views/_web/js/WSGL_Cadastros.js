@@ -376,6 +376,8 @@ if (!window._WSGL_Cadastros_Registrada) {
                 { chave: 'cliente_razao_social', titulo: 'Cliente', tipo: 'texto' },
                 { chave: 'ambiente_nome', titulo: 'Ambiente', tipo: 'texto' },
                 { chave: 'cluster_uid', titulo: 'UID', tipo: 'texto' },
+                { chave: 'ip_origem', titulo: 'IP de origem', tipo: 'texto' },
+                { chave: 'ultima_comunicacao', titulo: 'Última comunicação', tipo: 'data' },
                 {
                     chave: 'situacao', titulo: 'Situação', tipo: 'status',
                     mapaStatus: {
@@ -401,6 +403,36 @@ if (!window._WSGL_Cadastros_Registrada) {
             // campos extras (cluster de destino + justificativa) coletados em modal, então
             // usa o mecanismo de escape 'botoesExtras' (botão completo) já suportado por _wsglConfig.
             botoesExtras: [
+                {
+                    id: 'provisionar', label: 'Provisionar', icone: 'assignment_turned_in', tipo: 'padrao', grupo: 2, requerSelecao: -1,
+                    permissao: 'wsgl/clusters.provisionar',
+                    title: 'Vincula um cluster auto-registrado a um cliente e ambiente',
+                    async aoClicar(sel, _dados, tela) {
+                        const reg = sel[0];
+                        const vals = await WSGL_ModalFormulario.Abrir({
+                            titulo: 'Provisionar Cluster',
+                            campos: [
+                                { chave: 'cliente_id', label: 'Cliente', tipo: 'referencia', entidade: 'clientes', rotulo: 'razao_social', obrigatorio: true },
+                                { chave: 'ambiente_id', label: 'Ambiente', tipo: 'referencia', entidade: 'ambientes', rotulo: 'nome', obrigatorio: true },
+                                { chave: 'nome', label: 'Nome do cluster', tipo: 'texto', obrigatorio: true },
+                            ],
+                            valores: { nome: (reg.nome && reg.nome.indexOf('aguardando') < 0) ? reg.nome : '' },
+                        });
+                        if (!vals) return;
+                        _WebSocket.Emit('wsgl/clusters.provisionar', 'WSCore_GeradorLicencas/*', {
+                            id: reg.id, cliente_id: vals.cliente_id, ambiente_id: vals.ambiente_id, nome: vals.nome,
+                        }, (r) => {
+                            if (r && r.status === 'OK') {
+                                tela.LimparSelecao();
+                                tela.Recarregar();
+                                _Notificacoes.Adicionar_Notificacao(Date.now(), 'Cluster provisionado — aprove para liberar licenças', { Titulo: 'Sucesso', Cor: '#26a69a', Background: '#1a2e2e' }, '', {});
+                                _LogAtividades.Registrar('Cluster provisionado', 'info');
+                            } else {
+                                _Notificacoes.Adicionar_Notificacao(Date.now(), (r && r.mensagem) || 'Erro ao provisionar cluster', { Titulo: 'Erro', Cor: '#ef5350', Background: '#2e1a1a' }, '', {});
+                            }
+                        });
+                    },
+                },
                 {
                     id: 'substituir', label: 'Substituir', icone: 'sync_alt', tipo: 'padrao', grupo: 2, requerSelecao: -1,
                     permissao: 'wsgl/clusters.substituir',

@@ -74,6 +74,17 @@ export class Socket_Clusters {
             });
         });
 
+        sc.on('wsgl/clusters.provisionar', (d: Pacotes_Socket, callback = (..._: unknown[]) => { }) => {
+            this.comAutorizacao(d, 'wsgl/clusters.provisionar', callback, (usuario) => {
+                const p = this.parse<{ id: number; cliente_id: number; ambiente_id: number; nome: string }>(d.dados, callback); if (!p) return;
+                if (typeof p.id !== 'number') { callback({ status: 'Erro', mensagem: 'Campo obrigatório: id (number)' }); return; }
+                this._Cfg.Provisionar(p.id, { cliente_id: p.cliente_id, ambiente_id: p.ambiente_id, nome: p.nome }, usuario.id).then((e) => {
+                    AuditDB.Gravar({ evento: 'wsgl/clusters.provisionar', usuario_id: usuario.id, usuario_login: usuario.usuario, origem_modulo: d.origem, dados_entrada: d.dados, status: 'OK', retorno: `id=${e.id}` });
+                    callback({ status: 'OK', dados: e });
+                }).catch((err) => callback({ status: 'Erro', mensagem: (err as { mensagem?: string }).mensagem ?? 'Erro ao provisionar cluster' }));
+            });
+        });
+
         sc.on('wsgl/clusters.editar', (d: Pacotes_Socket, callback = (..._: unknown[]) => { }) => {
             this.comAutorizacao(d, 'wsgl/clusters.editar', callback, (usuario) => {
                 const p = this.parse<{ id: number } & Partial<DadosCluster>>(d.dados, callback); if (!p) return;

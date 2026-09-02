@@ -30,7 +30,8 @@ export class Config_Clusters {
       [like, like]);
     const totalLinhas = Object.assign([], totalResult) as Array<{ total: number }>;
     const registrosResult = await this._BD.Query(
-      `SELECT c.*, amb.nome AS ambiente_nome, cli.razao_social AS cliente_razao_social
+      `SELECT c.*, amb.nome AS ambiente_nome, cli.razao_social AS cliente_razao_social,
+              (CASE WHEN c.cliente_id > 0 AND c.ambiente_id > 0 THEN 1 ELSE 0 END) AS provisionado
          FROM _Mod_WSGL_Clusters c
          LEFT JOIN _Mod_WSGL_Ambientes amb ON amb.id = c.ambiente_id
          LEFT JOIN _Mod_WSGL_Clientes cli ON cli.id = c.cliente_id
@@ -38,6 +39,42 @@ export class Config_Clusters {
         ORDER BY c.${ordem} ${direcao} LIMIT ? OFFSET ?`,
       [like, like, limite, offset]);
     return { registros: Object.assign([], registrosResult) as unknown[], total: totalLinhas[0]?.total ?? 0 };
+  }
+
+  /**
+   * Registra o contato de um Licenciador na API: atualiza IP/última comunicação se o
+   * cluster já existe; senão AUTO-REGISTRA um cluster pendente e NÃO provisionado
+   * (cliente_id=0/ambiente_id=0) com o IP de origem, para o admin provisionar depois.
+   */
+  public async RegistrarContato(cluster_uid: string, ip: string | null): Promise<void> {
+    const agora = new Date();
+    const rows = Object.assign([], await this._BD.Query(
+      'SELECT id FROM _Mod_WSGL_Clusters WHERE cluster_uid = ? AND excluido = 0 LIMIT 1', [cluster_uid])
+    ) as Array<{ id: number }>;
+    if (rows.length > 0) {
+      await this._BD.Query(
+        'UPDATE _Mod_WSGL_Clusters SET ultima_comunicacao = ?, ip_origem = ? WHERE cluster_uid = ? AND excluido = 0',
+        [agora, ip ?? null, cluster_uid]);
+      return;
+    }
+    await this._BD.Query(
+      `INSERT INTO _Mod_WSGL_Clusters (cliente_id, ambiente_id, nome, cluster_uid, situacao, ip_origem,
+         primeira_comunicacao, ultima_comunicacao, criado_em, criado_por, editado_por, excluido_por,
+         ativado_em, ativado_por, inativado_por, ativo, excluido)
+       VALUES (0, 0, '(aguardando provisionamento)', ?, 'pendente', ?, ?, ?, ?, 0, 0, 0, ?, 0, 0, 1, 0)`,
+      [cluster_uid, ip ?? null, agora, agora, agora, agora]);
+  }
+
+  /** Provisiona um cluster auto-registrado: vincula cliente/ambiente/nome (mantém pendente até Aprovar). */
+  public async Provisionar(id: number, d: { cliente_id: number; ambiente_id: number; nome: string }, por = 0): Promise<_Mod_WSGL_Clusters> {
+    if (!d.cliente_id) throw { mensagem: 'Campo obrigatório: cliente_id' };
+    if (!d.ambiente_id) throw { mensagem: 'Campo obrigatório: ambiente_id' };
+    if (!d.nome || !d.nome.trim()) throw { mensagem: 'Campo obrigatório: nome' };
+    await this.Buscar(id);
+    await this._BD.Query(
+      'UPDATE _Mod_WSGL_Clusters SET cliente_id = ?, ambiente_id = ?, nome = ?, editado_em = ?, editado_por = ? WHERE id = ? AND excluido = 0',
+      [d.cliente_id, d.ambiente_id, d.nome.trim(), new Date(), por, id]);
+    return this.Buscar(id);
   }
 
   public async Buscar(id: number): Promise<_Mod_WSGL_Clusters> {

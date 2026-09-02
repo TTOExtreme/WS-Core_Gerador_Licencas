@@ -39,6 +39,7 @@ INSERT IGNORE INTO _Permissoes (codigo,nome,descricao,modulo) VALUES
 ("wsgl/clusters.excluir","Exclusao Clusters","Permissao de exclusao de clusters","WSCore_GeradorLicencas");
 
 INSERT IGNORE INTO _Permissoes (codigo,nome,descricao,modulo) VALUES
+("wsgl/clusters.provisionar","Provisionamento Clusters","Permissao de provisionar (vincular cliente/ambiente) cluster auto-registrado","WSCore_GeradorLicencas"),
 ("wsgl/clusters.aprovar","Aprovacao Clusters","Permissao de aprovar cluster","WSCore_GeradorLicencas"),
 ("wsgl/clusters.bloquear","Bloqueio Clusters","Permissao de bloquear cluster","WSCore_GeradorLicencas"),
 ("wsgl/clusters.inativar","Inativacao Clusters","Permissao de inativar cluster","WSCore_GeradorLicencas");
