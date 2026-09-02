@@ -68,7 +68,14 @@ export class Socket_Licencas {
                 this._Cfg.Emitir(p, usuario.id).then((e) => {
                     AuditDB.Gravar({ evento: 'wsgl/licencas.emitir', usuario_id: usuario.id, usuario_login: usuario.usuario, origem_modulo: d.origem, dados_entrada: d.dados, status: 'OK', retorno: `lic_id=${e.lic_id}` });
                     callback({ status: 'OK', dados: e });
-                }).catch((err) => callback({ status: 'Erro', mensagem: (err as { mensagem?: string }).mensagem ?? 'Erro ao emitir licença' }));
+                }).catch((err) => {
+                    // Superfície o erro real (msg tipada, senão Error.message, senão o objeto) no log,
+                    // na auditoria e na notificação — evita "Erro ao emitir licença" sem descritivo.
+                    const detalhe = (err as { mensagem?: string }).mensagem ?? (err as Error)?.message ?? String(err);
+                    this._Logger.Error('[Licencas] Falha ao emitir licença', err);
+                    AuditDB.Gravar({ evento: 'wsgl/licencas.emitir', usuario_id: usuario.id, usuario_login: usuario.usuario, origem_modulo: d.origem, dados_entrada: d.dados, status: 'Erro', retorno: detalhe });
+                    callback({ status: 'Erro', mensagem: detalhe });
+                });
             });
         });
 
