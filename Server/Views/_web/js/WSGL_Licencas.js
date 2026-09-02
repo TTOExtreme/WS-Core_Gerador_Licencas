@@ -7,9 +7,33 @@ if (!window._TelaWSGLLicencas_Registrada) {
     window._TelaWSGLLicencas_Registrada = true;
 
     _Eventos.on("open/wsgl/licencas", () => {
+        // Pré-carrega o modal de formulário (definido em WSGL_Cadastros.js) assim que a tela abre,
+        // para que a emissão funcione mesmo sem ter passado antes por uma tela de cadastro.
+        window._WSGL_GarantirFormulario();
         new Controle_Tela_Tabela(_configLicencas()).Abrir();
     });
 }
+
+// Garante que o modal genérico (window.WSGL_ModalFormulario, registrado por WSGL_Cadastros.js)
+// esteja disponível — carregando WSGL_Cadastros.js sob demanda. Resolve quando o modal existir.
+// Idempotente e compartilhado entre as telas do Gerador (definido uma vez em window).
+window._WSGL_GarantirFormulario = window._WSGL_GarantirFormulario || function () {
+    return new Promise((resolve, reject) => {
+        if (window.WSGL_ModalFormulario) { resolve(); return; }
+        if (!document.querySelector('script[data-wsgl-cadastros]')) {
+            const s = document.createElement("script");
+            s.src = "./modulos/WSCore_GeradorLicencas/js/WSGL_Cadastros.js";
+            s.setAttribute("data-wsgl-cadastros", "1");
+            s.onerror = () => reject({ mensagem: "Falha ao carregar o formulário (WSGL_Cadastros.js)" });
+            document.head.appendChild(s);
+        }
+        const inicio = Date.now();
+        const iv = setInterval(() => {
+            if (window.WSGL_ModalFormulario) { clearInterval(iv); resolve(); }
+            else if (Date.now() - inicio > 5000) { clearInterval(iv); reject({ mensagem: "Tempo esgotado ao carregar o formulário" }); }
+        }, 50);
+    });
+};
 
 // Valores do enum TipoLicenca (Server/Controllers/Lib/Licenca/Tipos.ts).
 const _WSGL_TIPOS_LICENCA = [
@@ -122,6 +146,7 @@ function _configLicencas() {
                 requerSelecao: 0,
                 title: "Emitir uma nova licença assinada",
                 async aoClicar(_sel, _dados, tela) {
+                    await window._WSGL_GarantirFormulario();
                     const opcoesModulo = await _WSGL_CarregarOpcoesModulo();
                     const vals = await window.WSGL_ModalFormulario.Abrir({
                         titulo: "Emitir Licença",
@@ -193,6 +218,7 @@ function _configLicencas() {
                 permissao: "wsgl/licencas.estender",
                 title: "Estende temporariamente a validade da licença selecionada",
                 async aoClicar(sel, _dados, tela) {
+                    await window._WSGL_GarantirFormulario();
                     const reg = sel[0];
                     const vals = await window.WSGL_ModalFormulario.Abrir({
                         titulo: "Estender Licença",
@@ -237,6 +263,7 @@ function _configLicencas() {
                         textoBotao: "Revogar licença",
                     });
                     if (!confirmado) return;
+                    await window._WSGL_GarantirFormulario();
                     const vals = await window.WSGL_ModalFormulario.Abrir({
                         titulo: "Motivo da Revogação",
                         campos: [

@@ -4,9 +4,30 @@
 if (!window._TelaWSGLModulos_Registrada) {
     window._TelaWSGLModulos_Registrada = true;
     _Eventos.on("open/wsgl/modulos", () => {
+        window._WSGL_GarantirFormulario();
         new Controle_Tela_Tabela(_configModulos()).Abrir();
     });
 }
+
+// Garante o modal genérico (window.WSGL_ModalFormulario, registrado por WSGL_Cadastros.js),
+// carregando-o sob demanda. Idempotente/compartilhado (mesma definição em WSGL_Licencas.js).
+window._WSGL_GarantirFormulario = window._WSGL_GarantirFormulario || function () {
+    return new Promise((resolve, reject) => {
+        if (window.WSGL_ModalFormulario) { resolve(); return; }
+        if (!document.querySelector('script[data-wsgl-cadastros]')) {
+            const s = document.createElement("script");
+            s.src = "./modulos/WSCore_GeradorLicencas/js/WSGL_Cadastros.js";
+            s.setAttribute("data-wsgl-cadastros", "1");
+            s.onerror = () => reject({ mensagem: "Falha ao carregar o formulário (WSGL_Cadastros.js)" });
+            document.head.appendChild(s);
+        }
+        const inicio = Date.now();
+        const iv = setInterval(() => {
+            if (window.WSGL_ModalFormulario) { clearInterval(iv); resolve(); }
+            else if (Date.now() - inicio > 5000) { clearInterval(iv); reject({ mensagem: "Tempo esgotado ao carregar o formulário" }); }
+        }, 50);
+    });
+};
 
 const _WSGL_SITUACOES_MODULO = [
     { valor: "disponivel", label: "Disponível" },
@@ -75,6 +96,7 @@ function _configModulos() {
                 id: "novo", label: "Novo", icone: "add", tipo: "primario", grupo: 1, requerSelecao: 0,
                 permissao: "wsgl/modulos.criar",
                 async aoClicar(_sel, _dados, tela) {
+                    await window._WSGL_GarantirFormulario();
                     const vals = await window.WSGL_ModalFormulario.Abrir({
                         titulo: "Novo Módulo/Versão", campos: camposModulo(), valores: { situacao: "disponivel" },
                     });
@@ -89,6 +111,7 @@ function _configModulos() {
                 id: "editar", label: "Editar", icone: "edit", tipo: "padrao", grupo: 2, requerSelecao: -1,
                 permissao: "wsgl/modulos.editar",
                 async aoClicar(sel, _dados, tela) {
+                    await window._WSGL_GarantirFormulario();
                     const reg = sel[0];
                     const vals = await window.WSGL_ModalFormulario.Abrir({
                         titulo: "Editar Módulo/Versão", campos: camposModulo(true),
