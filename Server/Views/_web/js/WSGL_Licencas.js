@@ -168,19 +168,23 @@ function _configLicencas() {
                             { chave: "ambiente_id", label: "Ambiente", tipo: "referencia", entidade: "ambientes", rotulo: "nome", obrigatorio: true },
                             { chave: "cluster_id", label: "Cluster", tipo: "referencia", entidade: "clusters", rotulo: "nome", obrigatorio: true },
                             { chave: "contrato_id", label: "Contrato", tipo: "referencia", entidade: "contratos", rotulo: "codigo" },
-                            { chave: "modulo_versao", label: "Módulo / Versão (módulo e instância)", tipo: "select", opcoes: opcoesModulo },
-                            { chave: "nivel", label: "Nível (base/módulo)", tipo: "select", opcoes: _WSGL_NIVEIS_LICENCA },
-                            { chave: "modelo_uso", label: "Modelo de uso (base/módulo)", tipo: "select", opcoes: _WSGL_MODELOS_USO },
-                            { chave: "vagas", label: "Quantidade (simultâneos)", tipo: "select", opcoes: _WSGL_QUANTIDADES },
+                            { chave: "modulo_versao", label: "Módulo / Versão", tipo: "select", opcoes: opcoesModulo, mostrarSe: (v) => v.escopo === "modulo" || v.escopo === "instancia" },
+                            { chave: "nivel", label: "Nível", tipo: "select", opcoes: _WSGL_NIVEIS_LICENCA, mostrarSe: (v) => v.escopo === "base" || v.escopo === "modulo" },
+                            { chave: "modelo_uso", label: "Modelo de uso", tipo: "select", opcoes: _WSGL_MODELOS_USO, mostrarSe: (v) => v.escopo === "base" || v.escopo === "modulo" },
+                            { chave: "vagas", label: "Quantidade (simultâneos)", tipo: "select", opcoes: _WSGL_QUANTIDADES, mostrarSe: (v) => (v.escopo === "base" || v.escopo === "modulo") && v.modelo_uso === "simultaneos" },
                         ],
                         valores: {},
                     });
                     if (!vals) return;
-                    // Divide o par selecionado "modulo|||versao" nos campos que o servidor espera.
-                    if (vals.modulo_versao) {
+                    // Divide o par "modulo|||versao" — só para escopos que usam módulo (módulo/instância);
+                    // Base ignora módulo/versão (mesmo que o campo oculto retorne algo).
+                    if (vals.escopo !== "base" && vals.modulo_versao) {
                         const partes = String(vals.modulo_versao).split("|||");
                         vals.modulo = partes[0] || null;
                         vals.versao = partes[1] || null;
+                    } else {
+                        vals.modulo = null;
+                        vals.versao = null;
                     }
                     delete vals.modulo_versao;
                     _WebSocket.Emit("wsgl/licencas.emitir", "WSCore_GeradorLicencas/*", vals, (r) => {

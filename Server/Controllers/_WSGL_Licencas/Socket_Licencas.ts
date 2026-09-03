@@ -64,7 +64,7 @@ export class Socket_Licencas {
         sc.on('wsgl/licencas.emitir', (d: Pacotes_Socket, callback = (..._: unknown[]) => { }) => {
             this.comAutorizacao(d, 'wsgl/licencas.emitir', callback, (usuario) => {
                 const p = this.parse<DadosEmissao>(d.dados, callback); if (!p) return;
-                if (typeof p.tipo !== 'string' || !p.tipo.trim()) { callback({ status: 'Erro', mensagem: 'Campo obrigatório: tipo' }); return; }
+                if (typeof p.escopo !== 'string' || !p.escopo.trim()) { callback({ status: 'Erro', mensagem: 'Campo obrigatório: escopo' }); return; }
                 this._Cfg.Emitir(p, usuario.id).then((e) => {
                     AuditDB.Gravar({ evento: 'wsgl/licencas.emitir', usuario_id: usuario.id, usuario_login: usuario.usuario, origem_modulo: d.origem, dados_entrada: d.dados, status: 'OK', retorno: `lic_id=${e.lic_id}` });
                     callback({ status: 'OK', dados: e });

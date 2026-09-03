@@ -9,7 +9,8 @@ import { LicencaClaims, TipoLicenca, NivelComercial, TipoAmbiente, LicencaLimite
 import { Config_Modulos } from '../_WSGL_Modulos/Config_Modulos';
 
 export interface DadosEmissao {
-  tipo: TipoLicenca;
+  /** Derivado de escopo+modelo_uso (não é mais entrada do formulário). */
+  tipo?: TipoLicenca;
   escopo: EscopoLicenca;
   cliente_id: number;
   contrato_id?: number | null;
