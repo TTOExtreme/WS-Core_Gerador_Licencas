@@ -23,6 +23,19 @@ export enum NivelComercial {
   INTEGRACAO = 'integracao',
 }
 
+/** Escopo da licença (o que cobre) — eixo ortogonal ao nível e ao modelo de uso. */
+export enum EscopoLicenca {
+  BASE = 'base',
+  MODULO = 'modulo',
+  INSTANCIA = 'instancia',
+}
+
+/** Modelo de uso das licenças de usuário (base/modulo). */
+export enum ModeloUso {
+  SIMULTANEOS = 'simultaneos',
+  UNICO = 'unico',
+}
+
 export enum TipoAmbiente {
   PRODUCAO = 'producao',
   HOMOLOGACAO = 'homologacao',
@@ -41,6 +54,8 @@ export interface LicencaClaims {
   /** ID único da licença. */
   lic_id: string;
   tipo: TipoLicenca;
+  /** Escopo (base/modulo/instancia) — eixo primário do modelo de licenças. */
+  escopo: EscopoLicenca;
   cliente: string;
   contrato?: string | null;
   ambiente: TipoAmbiente;
@@ -48,7 +63,8 @@ export interface LicencaClaims {
   modulo?: string | null;
   /** Versão do módulo licenciado (casada ao catálogo de módulos/versões). */
   versao?: string | null;
-  instancia?: string | null;
   nivel?: NivelComercial | null;
+  /** Modelo de uso (base/modulo): N simultâneos ou usuário único. */
+  modelo_uso?: ModeloUso | null;
   limites?: LicencaLimites | null;
 }
