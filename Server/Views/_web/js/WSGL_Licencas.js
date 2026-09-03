@@ -57,6 +57,18 @@ const _WSGL_NIVEIS_LICENCA = [
     { valor: "integracao", label: "Integração" },
 ];
 
+// Eixos ortogonais da licenca (Server/Controllers/Lib/Licenca/Tipos.ts).
+const _WSGL_ESCOPOS_LICENCA = [
+    { valor: "base", label: "Base (todos os módulos)" },
+    { valor: "modulo", label: "Módulo específico" },
+    { valor: "instancia", label: "Instância de módulo (conexão no Core)" },
+];
+const _WSGL_MODELOS_USO = [
+    { valor: "simultaneos", label: "N usuários simultâneos" },
+    { valor: "unico", label: "Usuário único" },
+];
+const _WSGL_QUANTIDADES = [5, 10, 50, 100, 500, 1000, 5000].map((n) => ({ valor: n, label: String(n) }));
+
 /**
  * Busca o catalogo de modulos/versoes para o select de emissao. Exclui versoes
  * descomissionadas (nao permitem nova licenca); beta entra com marcador.
@@ -151,16 +163,15 @@ function _configLicencas() {
                     const vals = await window.WSGL_ModalFormulario.Abrir({
                         titulo: "Emitir Licença",
                         campos: [
-                            { chave: "tipo", label: "Tipo", tipo: "select", opcoes: _WSGL_TIPOS_LICENCA, obrigatorio: true },
+                            { chave: "escopo", label: "Escopo", tipo: "select", opcoes: _WSGL_ESCOPOS_LICENCA, obrigatorio: true },
                             { chave: "cliente_id", label: "Cliente", tipo: "referencia", entidade: "clientes", rotulo: "razao_social", obrigatorio: true },
                             { chave: "ambiente_id", label: "Ambiente", tipo: "referencia", entidade: "ambientes", rotulo: "nome", obrigatorio: true },
                             { chave: "cluster_id", label: "Cluster", tipo: "referencia", entidade: "clusters", rotulo: "nome", obrigatorio: true },
                             { chave: "contrato_id", label: "Contrato", tipo: "referencia", entidade: "contratos", rotulo: "codigo" },
-                            { chave: "modulo_versao", label: "Módulo / Versão", tipo: "select", opcoes: opcoesModulo },
-                            { chave: "instancia", label: "Instância", tipo: "texto" },
-                            { chave: "nivel", label: "Nível", tipo: "select", opcoes: _WSGL_NIVEIS_LICENCA },
-                            { chave: "vagas", label: "Vagas (usuários simultâneos)", tipo: "numero" },
-                            { chave: "instancias", label: "Instâncias (limite)", tipo: "numero" },
+                            { chave: "modulo_versao", label: "Módulo / Versão (módulo e instância)", tipo: "select", opcoes: opcoesModulo },
+                            { chave: "nivel", label: "Nível (base/módulo)", tipo: "select", opcoes: _WSGL_NIVEIS_LICENCA },
+                            { chave: "modelo_uso", label: "Modelo de uso (base/módulo)", tipo: "select", opcoes: _WSGL_MODELOS_USO },
+                            { chave: "vagas", label: "Quantidade (simultâneos)", tipo: "select", opcoes: _WSGL_QUANTIDADES },
                         ],
                         valores: {},
                     });
