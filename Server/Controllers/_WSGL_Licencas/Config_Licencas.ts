@@ -5,19 +5,20 @@ import { Conector_Mysql } from '../Lib/Conector_Mysql';
 import { _Mod_WSGL_Licencas } from '../../Models/DB/_Mod_WSGL_Licencas';
 import { assinarLicenca } from '../Lib/Licenca/Assinador';
 import { kidAtual } from '../Lib/Licenca/Chaves';
-import { LicencaClaims, TipoLicenca, NivelComercial, TipoAmbiente, LicencaLimites } from '../Lib/Licenca/Tipos';
+import { LicencaClaims, TipoLicenca, NivelComercial, TipoAmbiente, LicencaLimites, EscopoLicenca, ModeloUso } from '../Lib/Licenca/Tipos';
 import { Config_Modulos } from '../_WSGL_Modulos/Config_Modulos';
 
 export interface DadosEmissao {
   tipo: TipoLicenca;
+  escopo: EscopoLicenca;
   cliente_id: number;
   contrato_id?: number | null;
   ambiente_id: number;
   cluster_id: number;
   modulo?: string | null;
   versao?: string | null;
-  instancia?: string | null;
   nivel?: NivelComercial | null;
+  modelo_uso?: ModeloUso | null;
   limites?: LicencaLimites | null;
   /** Atalhos do formulário (planos) que compõem `limites` quando este não é enviado. */
   vagas?: number | null;
@@ -64,13 +65,13 @@ export class Config_Licencas {
     }
 
     const lic_id = randomUUID();
-    const limites = this._montarLimites(d);
+    const norm = this._normalizarEscopo(d);
     const claims: LicencaClaims = {
-      lic_id, tipo: d.tipo, cliente: String(d.cliente_id),
+      lic_id, tipo: norm.tipo, escopo: norm.escopo, cliente: String(d.cliente_id),
       contrato: d.contrato_id != null ? String(d.contrato_id) : null,
       ambiente: ambienteTipo, cluster_id: cluster_uid,
-      modulo: d.modulo ?? null, versao: d.versao ?? null, instancia: d.instancia ?? null,
-      nivel: d.nivel ?? null, limites,
+      modulo: d.modulo ?? null, versao: d.versao ?? null,
+      nivel: norm.nivel, modelo_uso: norm.modelo_uso, limites: norm.limites,
     };
     const dias = d.validadeDias ?? 30;
     const jws = await assinarLicenca(claims, { validadeDias: dias });
@@ -78,14 +79,34 @@ export class Config_Licencas {
     const expira = new Date(agora.getTime() + Math.min(dias, 30) * 86400 * 1000);
 
     const r = await this._BD.Query(
-      `INSERT INTO _Mod_WSGL_Licencas (lic_id, tipo, cliente_id, contrato_id, ambiente_id, cluster_id, modulo, versao, instancia,
-         nivel, limites, jws, kid, situacao, tipo_emissao, emitida_em, expira_em,
+      `INSERT INTO _Mod_WSGL_Licencas (lic_id, tipo, escopo, cliente_id, contrato_id, ambiente_id, cluster_id, modulo, versao,
+         nivel, modelo_uso, limites, jws, kid, situacao, tipo_emissao, emitida_em, expira_em,
          criado_em, criado_por, editado_por, excluido_por, ativado_em, ativado_por, inativado_por, ativo, excluido)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ativa', ?, ?, ?, ?, ?, ?, 0, ?, ?, 0, 1, 0)`,
-      [lic_id, d.tipo, d.cliente_id, d.contrato_id ?? null, d.ambiente_id, d.cluster_id, d.modulo ?? null, d.versao ?? null, d.instancia ?? null,
-       d.nivel ?? null, limites ? JSON.stringify(limites) : null, jws, kidAtual(), d.tipo_emissao ?? 'nova', agora, expira,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ativa', ?, ?, ?, ?, ?, ?, 0, ?, ?, 0, 1, 0)`,
+      [lic_id, norm.tipo, norm.escopo, d.cliente_id, d.contrato_id ?? null, d.ambiente_id, d.cluster_id, d.modulo ?? null, d.versao ?? null,
+       norm.nivel, norm.modelo_uso, norm.limites ? JSON.stringify(norm.limites) : null, jws, kidAtual(), d.tipo_emissao ?? 'nova', agora, expira,
        agora, emitido_por, emitido_por, agora, emitido_por]) as mysql.OkPacket;
     return this.Buscar(r.insertId);
+  }
+
+  /**
+   * Deriva o `tipo` legado (compat com o Licenciador atual, cuja lógica de vaga usa
+   * `tipo='uso_multiplo'`) a partir de escopo+modelo_uso. Base e módulo derivam do
+   * modelo de uso (o eixo `escopo` já distingue os dois); só instância é especial.
+   */
+  private _tipoLegado(escopo: EscopoLicenca, modelo_uso: ModeloUso): TipoLicenca {
+    if (escopo === EscopoLicenca.INSTANCIA) return TipoLicenca.INSTANCIA_MODULO;
+    return modelo_uso === ModeloUso.UNICO ? TipoLicenca.USO_UNICO : TipoLicenca.USO_MULTIPLO;
+  }
+
+  /** Normaliza os eixos por escopo: instância força vagas=1/sem nível/sem modelo_uso. */
+  private _normalizarEscopo(d: DadosEmissao): { escopo: EscopoLicenca; modelo_uso: ModeloUso | null; nivel: NivelComercial | null; limites: LicencaLimites | null; tipo: TipoLicenca } {
+    if (d.escopo === EscopoLicenca.INSTANCIA) {
+      return { escopo: EscopoLicenca.INSTANCIA, modelo_uso: null, nivel: null, limites: { vagas: 1 }, tipo: TipoLicenca.INSTANCIA_MODULO };
+    }
+    const modelo_uso = d.modelo_uso === ModeloUso.UNICO ? ModeloUso.UNICO : ModeloUso.SIMULTANEOS;
+    const limites = modelo_uso === ModeloUso.UNICO ? { vagas: 1 } : this._montarLimites(d);
+    return { escopo: d.escopo, modelo_uso, nivel: d.nivel ?? null, limites, tipo: this._tipoLegado(d.escopo, modelo_uso) };
   }
 
   /** Compõe `limites` a partir de `d.limites` (explícito) ou dos atalhos numéricos vagas/instancias. */
@@ -198,10 +219,12 @@ export class Config_Licencas {
       catch { limites = null; }
     }
     const claims: LicencaClaims = {
-      lic_id: l.lic_id, tipo: l.tipo as TipoLicenca, cliente: String(l.cliente_id),
+      lic_id: l.lic_id, tipo: l.tipo as TipoLicenca, escopo: (l.escopo as EscopoLicenca) ?? EscopoLicenca.MODULO,
+      cliente: String(l.cliente_id),
       contrato: l.contrato_id != null ? String(l.contrato_id) : null,
       ambiente: await this._ambienteTipo(l.ambiente_id), cluster_id: cluster_uid,
-      modulo: l.modulo, versao: l.versao, instancia: l.instancia, nivel: (l.nivel as NivelComercial | null), limites,
+      modulo: l.modulo, versao: l.versao,
+      nivel: (l.nivel as NivelComercial | null), modelo_uso: (l.modelo_uso as ModeloUso | null), limites,
     };
     return assinarLicenca(claims, { validadeDias: Math.min(dias, 30) });
   }

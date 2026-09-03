@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { Config_Licencas } from '../Config_Licencas';
 import { FakeBD } from '../../../__tests__/FakeBD';
 import { gerarParDeChaves } from '../../Lib/Licenca/Chaves';
-import { TipoLicenca, NivelComercial } from '../../Lib/Licenca/Tipos';
+import { TipoLicenca, NivelComercial, EscopoLicenca } from '../../Lib/Licenca/Tipos';
 import type { Modelo_Config } from '../../../Models/Modelo_Configuracao';
 
 beforeAll(async () => {
@@ -13,7 +13,7 @@ beforeAll(async () => {
 });
 
 function novaEntrada() {
-  return { tipo: TipoLicenca.MODULO, cliente_id: 1, contrato_id: 2, ambiente_id: 3, cluster_id: 4,
+  return { escopo: EscopoLicenca.MODULO, tipo: TipoLicenca.MODULO, cliente_id: 1, contrato_id: 2, ambiente_id: 3, cluster_id: 4,
     modulo: 'WSCore_Financeiro', nivel: NivelComercial.PROFESSIONAL };
 }
 
@@ -75,6 +75,40 @@ describe('Config_Licencas.Emitir', () => {
     const limitesParam = insert!.valores.find((v) => typeof v === 'string' && (v as string).includes('"vagas"'));
     expect(limitesParam).toBeDefined();
     expect(JSON.parse(limitesParam as string)).toMatchObject({ vagas: 5 });
+  });
+
+  it('normaliza instância: vagas=1, sem nível/modelo_uso, tipo legado instancia_modulo', async () => {
+    const fake = new FakeBD();
+    fake.enfileirar([{ id: 4, cluster_uid: 'uid-4', situacao: 'aprovado' }]);
+    fake.enfileirar([{ id: 3, tipo: 'producao' }]);
+    fake.enfileirar([{ situacao: 'disponivel' }]);                       // SituacaoDaVersao
+    fake.enfileirar({ insertId: 80 });
+    fake.enfileirar([{ id: 80, lic_id: 'x', jws: 'j', situacao: 'ativa' }]);
+    const cfg = new Config_Licencas({} as Modelo_Config, fake.comoConector());
+    await cfg.Emitir({ escopo: 'instancia', tipo: 'x', cliente_id: 1, ambiente_id: 3, cluster_id: 4, modulo: 'WSCore_Financeiro', versao: '1.1.0', nivel: 'enterprise', vagas: 500 } as never, 9);
+    const ins = fake.queries.find((q) => q.sql.includes('INSERT INTO _Mod_WSGL_Licencas'))!;
+    expect((ins.sql.match(/\?/g) || []).length).toBe(ins.valores.length);
+    expect(ins.valores).toContain('instancia');
+    expect(ins.valores).toContain('instancia_modulo');
+    const limitesParam = ins.valores.find((v) => typeof v === 'string' && (v as string).includes('"vagas"'));
+    expect(JSON.parse(limitesParam as string)).toMatchObject({ vagas: 1 });
+  });
+
+  it('base simultâneos: tipo legado uso_multiplo, escopo base, vagas do input', async () => {
+    const fake = new FakeBD();
+    fake.enfileirar([{ id: 4, cluster_uid: 'uid-4', situacao: 'aprovado' }]);
+    fake.enfileirar([{ id: 3, tipo: 'producao' }]);
+    fake.enfileirar({ insertId: 81 });
+    fake.enfileirar([{ id: 81, lic_id: 'x', jws: 'j', situacao: 'ativa' }]);
+    const cfg = new Config_Licencas({} as Modelo_Config, fake.comoConector());
+    await cfg.Emitir({ escopo: 'base', modelo_uso: 'simultaneos', tipo: 'x', cliente_id: 1, ambiente_id: 3, cluster_id: 4, nivel: 'professional', vagas: 50 } as never, 9);
+    const ins = fake.queries.find((q) => q.sql.includes('INSERT INTO _Mod_WSGL_Licencas'))!;
+    expect((ins.sql.match(/\?/g) || []).length).toBe(ins.valores.length);
+    expect(ins.valores).toContain('base');
+    expect(ins.valores).toContain('uso_multiplo');
+    expect(ins.valores).toContain('simultaneos');
+    const limitesParam = ins.valores.find((v) => typeof v === 'string' && (v as string).includes('"vagas"'));
+    expect(JSON.parse(limitesParam as string)).toMatchObject({ vagas: 50 });
   });
 
   it('INSERT tem colunas e valores em contagem igual (regressão de count mismatch — erro 1136)', async () => {

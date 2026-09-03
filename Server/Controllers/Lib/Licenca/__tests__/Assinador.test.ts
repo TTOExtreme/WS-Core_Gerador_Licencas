@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { importSPKI, jwtVerify, decodeProtectedHeader } from 'jose';
 import { gerarParDeChaves, ALG_LICENCA } from '../Chaves';
 import { assinarLicenca, VALIDADE_MAXIMA_DIAS } from '../Assinador';
-import { TipoLicenca, TipoAmbiente, NivelComercial, LicencaClaims } from '../Tipos';
+import { TipoLicenca, TipoAmbiente, NivelComercial, EscopoLicenca, LicencaClaims } from '../Tipos';
 
 let publicaPem: string;
 
@@ -10,6 +10,7 @@ function claimsExemplo(): LicencaClaims {
   return {
     lic_id: 'lic-001',
     tipo: TipoLicenca.MODULO,
+    escopo: EscopoLicenca.MODULO,
     cliente: 'cli-001',
     contrato: 'ctr-001',
     ambiente: TipoAmbiente.PRODUCAO,
