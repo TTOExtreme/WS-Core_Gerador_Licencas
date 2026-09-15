@@ -90,6 +90,30 @@ function _WSGL_CarregarOpcoesModulo() {
 }
 
 /**
+ * Busca os ambientes cadastrados e monta um mapa id→tipo, usado para exibir o
+ * campo de duração da avaliação apenas quando o ambiente selecionado é do tipo `teste`.
+ * Falha silenciosa -> mapa vazio (campo simplesmente não aparece).
+ */
+function _WSGL_CarregarAmbientesTipo() {
+    return new Promise((resolve) => {
+        _WebSocket.Emit("wsgl/ambientes.listar", "WSCore_GeradorLicencas/*",
+            { pagina: 1, limite: 500, pesquisa: "", ordem: "nome", direcao: "asc" }, (r) => {
+                const mapa = {};
+                if (r && r.status === "OK" && Array.isArray(r.registros)) {
+                    for (const a of r.registros) mapa[String(a.id)] = a.tipo;
+                }
+                resolve(mapa);
+            });
+    });
+}
+const _WSGL_DURACOES_TESTE = [
+    { valor: "30", label: "30 dias" }, { valor: "60", label: "60 dias" },
+    { valor: "90", label: "90 dias" }, { valor: "180", label: "180 dias" },
+    { valor: "360", label: "360 dias" }, { valor: "720", label: "720 dias" },
+    { valor: "3650", label: "3650 dias (10 anos)" },
+];
+
+/**
  * Factory de configuracao — chamada a cada abertura para garantir
  * closures frescos por instancia.
  */
@@ -160,6 +184,7 @@ function _configLicencas() {
                 async aoClicar(_sel, _dados, tela) {
                     await window._WSGL_GarantirFormulario();
                     const opcoesModulo = await _WSGL_CarregarOpcoesModulo();
+                    const ambTipo = await _WSGL_CarregarAmbientesTipo();
                     const vals = await window.WSGL_ModalFormulario.Abrir({
                         titulo: "Emitir Licença",
                         campos: [
@@ -172,6 +197,8 @@ function _configLicencas() {
                             { chave: "nivel", label: "Nível", tipo: "select", opcoes: _WSGL_NIVEIS_LICENCA, mostrarSe: (v) => v.escopo === "base" || v.escopo === "modulo" },
                             { chave: "modelo_uso", label: "Modelo de uso", tipo: "select", opcoes: _WSGL_MODELOS_USO, mostrarSe: (v) => v.escopo === "base" || v.escopo === "modulo" },
                             { chave: "vagas", label: "Quantidade (assentos)", tipo: "select", opcoes: _WSGL_QUANTIDADES, mostrarSe: (v) => (v.escopo === "base" || v.escopo === "modulo") && (v.modelo_uso === "simultaneos" || v.modelo_uso === "unico") },
+                            { chave: "validadeDias", label: "Duração da avaliação", tipo: "select", opcoes: _WSGL_DURACOES_TESTE,
+                              mostrarSe: (v) => ambTipo[String(v.ambiente_id)] === "teste" },
                         ],
                         valores: {},
                     });
@@ -187,6 +214,7 @@ function _configLicencas() {
                         vals.versao = null;
                     }
                     delete vals.modulo_versao;
+                    if (vals.validadeDias) vals.validadeDias = Number(vals.validadeDias);
                     _WebSocket.Emit("wsgl/licencas.emitir", "WSCore_GeradorLicencas/*", vals, (r) => {
                         if (r && r.status === "OK") {
                             tela.LimparSelecao();
@@ -254,6 +282,25 @@ function _configLicencas() {
                             notificar((r && r.mensagem) || "Erro ao estender licença", false);
                         }
                     });
+                },
+            },
+            {
+                id: "copiar_jws",
+                label: "Copiar licença (JWS)",
+                icone: "content_copy",
+                tipo: "padrao",
+                grupo: 2,
+                requerSelecao: 1,
+                title: "Copia o JWS da licença para instalar offline no ambiente de avaliação",
+                async aoClicar(sel) {
+                    const jws = sel[0] && sel[0].jws;
+                    if (!jws) { notificar("JWS não disponível para esta licença", false); return; }
+                    try {
+                        await navigator.clipboard.writeText(jws);
+                        notificar("Licença (JWS) copiada", true);
+                    } catch {
+                        notificar("Não foi possível copiar", false);
+                    }
                 },
             },
 
