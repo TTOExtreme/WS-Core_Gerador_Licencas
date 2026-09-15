@@ -106,7 +106,9 @@ export class Config_Licencas {
       return { escopo: EscopoLicenca.INSTANCIA, modelo_uso: null, nivel: null, limites: { vagas: 1 }, tipo: TipoLicenca.INSTANCIA_MODULO };
     }
     const modelo_uso = d.modelo_uso === ModeloUso.UNICO ? ModeloUso.UNICO : ModeloUso.SIMULTANEOS;
-    const limites = modelo_uso === ModeloUso.UNICO ? { vagas: 1 } : this._montarLimites(d);
+    // Uso único agora também aceita quantidade (N assentos dedicados, não flutuantes); fallback 1.
+    let limites = this._montarLimites(d);
+    if (modelo_uso === ModeloUso.UNICO && (!limites || limites.vagas == null)) limites = { vagas: 1 };
     return { escopo: d.escopo, modelo_uso, nivel: d.nivel ?? null, limites, tipo: this._tipoLegado(d.escopo, modelo_uso) };
   }
 

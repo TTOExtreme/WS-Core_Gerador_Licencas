@@ -111,6 +111,21 @@ describe('Config_Licencas.Emitir', () => {
     expect(JSON.parse(limitesParam as string)).toMatchObject({ vagas: 50 });
   });
 
+  it('base uso único: mantém a quantidade do input (N assentos dedicados), tipo legado uso_unico', async () => {
+    const fake = new FakeBD();
+    fake.enfileirar([{ id: 4, cluster_uid: 'uid-4', situacao: 'aprovado' }]);
+    fake.enfileirar([{ id: 3, tipo: 'producao' }]);
+    fake.enfileirar({ insertId: 82 });
+    fake.enfileirar([{ id: 82, lic_id: 'x', jws: 'j', situacao: 'ativa' }]);
+    const cfg = new Config_Licencas({} as Modelo_Config, fake.comoConector());
+    await cfg.Emitir({ escopo: 'base', modelo_uso: 'unico', tipo: 'x', cliente_id: 1, ambiente_id: 3, cluster_id: 4, nivel: 'enterprise', vagas: 10 } as never, 9);
+    const ins = fake.queries.find((q) => q.sql.includes('INSERT INTO _Mod_WSGL_Licencas'))!;
+    expect(ins.valores).toContain('unico');
+    expect(ins.valores).toContain('uso_unico');
+    const limitesParam = ins.valores.find((v) => typeof v === 'string' && (v as string).includes('"vagas"'));
+    expect(JSON.parse(limitesParam as string)).toMatchObject({ vagas: 10 }); // não força mais 1
+  });
+
   it('INSERT tem colunas e valores em contagem igual (regressão de count mismatch — erro 1136)', async () => {
     const fake = new FakeBD();
     fake.enfileirar([{ id: 4, cluster_uid: 'uid-4', situacao: 'aprovado' }]);

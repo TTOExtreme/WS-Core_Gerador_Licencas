@@ -171,7 +171,7 @@ function _configLicencas() {
                             { chave: "modulo_versao", label: "Módulo / Versão", tipo: "select", opcoes: opcoesModulo, mostrarSe: (v) => v.escopo === "modulo" || v.escopo === "instancia" },
                             { chave: "nivel", label: "Nível", tipo: "select", opcoes: _WSGL_NIVEIS_LICENCA, mostrarSe: (v) => v.escopo === "base" || v.escopo === "modulo" },
                             { chave: "modelo_uso", label: "Modelo de uso", tipo: "select", opcoes: _WSGL_MODELOS_USO, mostrarSe: (v) => v.escopo === "base" || v.escopo === "modulo" },
-                            { chave: "vagas", label: "Quantidade (simultâneos)", tipo: "select", opcoes: _WSGL_QUANTIDADES, mostrarSe: (v) => (v.escopo === "base" || v.escopo === "modulo") && v.modelo_uso === "simultaneos" },
+                            { chave: "vagas", label: "Quantidade (assentos)", tipo: "select", opcoes: _WSGL_QUANTIDADES, mostrarSe: (v) => (v.escopo === "base" || v.escopo === "modulo") && (v.modelo_uso === "simultaneos" || v.modelo_uso === "unico") },
                         ],
                         valores: {},
                     });
