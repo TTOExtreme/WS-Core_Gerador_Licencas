@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { importSPKI, jwtVerify, decodeProtectedHeader } from 'jose';
 import { gerarParDeChaves, ALG_LICENCA } from '../Chaves';
-import { assinarLicenca, VALIDADE_MAXIMA_DIAS } from '../Assinador';
+import { assinarLicenca, VALIDADE_MAXIMA_DIAS, VALIDADE_TESTE_MAXIMA_DIAS } from '../Assinador';
 import { TipoLicenca, TipoAmbiente, NivelComercial, EscopoLicenca, LicencaClaims } from '../Tipos';
 
 let publicaPem: string;
@@ -75,5 +75,23 @@ describe('assinarLicenca', () => {
     });
     process.env.WSGL_LICENCA_CHAVE_PRIVADA = bak;
     if (bakArq !== undefined) process.env.WSGL_LICENCA_CHAVE_PRIVADA_ARQUIVO = bakArq;
+  });
+
+  it('produção continua limitada a 30 dias mesmo pedindo mais', async () => {
+    const antes = Math.floor(Date.now() / 1000);
+    const jws = await assinarLicenca(claimsExemplo(), { validadeDias: 3650 });
+    const chavePub = await importSPKI(publicaPem, ALG_LICENCA);
+    const { payload } = await jwtVerify(jws, chavePub, { issuer: 'WSCore-Gerador-Teste' });
+    const dias = Math.round(((payload.exp as number) - antes) / 86400);
+    expect(dias).toBe(VALIDADE_MAXIMA_DIAS); // 30
+  });
+
+  it('permitirLongo eleva o teto para VALIDADE_TESTE_MAXIMA_DIAS (avaliação)', async () => {
+    const antes = Math.floor(Date.now() / 1000);
+    const jws = await assinarLicenca(claimsExemplo(), { validadeDias: 3650, permitirLongo: true });
+    const chavePub = await importSPKI(publicaPem, ALG_LICENCA);
+    const { payload } = await jwtVerify(jws, chavePub, { issuer: 'WSCore-Gerador-Teste' });
+    const dias = Math.round(((payload.exp as number) - antes) / 86400);
+    expect(dias).toBe(VALIDADE_TESTE_MAXIMA_DIAS); // 3650
   });
 });
