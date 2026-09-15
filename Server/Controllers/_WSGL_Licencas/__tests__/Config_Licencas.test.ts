@@ -230,6 +230,20 @@ describe('Config_Licencas RenovarPorClusterUid', () => {
     expect(fake.queries.some((q) => q.sql.includes('SET jws'))).toBe(false);
     expect(novos.length).toBe(0);
   });
+
+  it('renovação reassina normalmente licença de ambiente não-teste', async () => {
+    const fake = new FakeBD();
+    fake.enfileirar([{ id: 1, lic_id: 'l1', tipo: 'uso_multiplo', escopo: 'base', cliente_id: 1,
+                       ambiente_id: 3, modulo: null, versao: null, nivel: 'enterprise',
+                       modelo_uso: 'simultaneos', limites: null }]); // SELECT de licenças ativas
+    fake.enfileirar([{ tipo: 'producao' }]); // _ambienteTipo dentro de _reassinar
+    fake.enfileirar({ affectedRows: 1 }); // UPDATE _Mod_WSGL_Licencas SET jws
+    fake.enfileirar({}); // UPDATE ultima_comunicacao
+    const cfg = new Config_Licencas({} as Modelo_Config, fake.comoConector());
+    const novos = await cfg.RenovarPorClusterUid('clu-x');
+    expect(novos.length).toBe(1);
+    expect(fake.queries.some((q) => q.sql.includes('SET jws'))).toBe(true);
+  });
 });
 
 describe('Config_Licencas InfoClusterPorUid', () => {
