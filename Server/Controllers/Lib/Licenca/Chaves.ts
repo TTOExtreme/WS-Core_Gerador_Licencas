@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import { createPrivateKey, createPublicKey } from 'crypto';
 import { importPKCS8, generateKeyPair, exportPKCS8, exportSPKI } from 'jose';
 import type { KeyLike } from 'jose';
 
@@ -23,6 +24,11 @@ export function emissor(): string {
  * Sem nenhuma das fontes, lança erro tipado.
  */
 export async function carregarChavePrivada(): Promise<KeyLike> {
+  return importPKCS8(carregarPrivadaPem(), ALG_LICENCA);
+}
+
+/** Resolve o PEM (normalizado) da chave privada pela mesma precedência de `carregarChavePrivada`. */
+function carregarPrivadaPem(): string {
   let pem = process.env.WSGL_LICENCA_CHAVE_PRIVADA;
   if (!pem || !pem.trim()) {
     const arquivo = process.env.WSGL_LICENCA_CHAVE_PRIVADA_ARQUIVO;
@@ -33,7 +39,18 @@ export async function carregarChavePrivada(): Promise<KeyLike> {
   if (!pem || !pem.trim()) {
     throw { mensagem: 'Chave privada de licença ausente (defina a env WSGL_LICENCA_CHAVE_PRIVADA ou crie o arquivo de chave junto ao config.cfg)' };
   }
-  return importPKCS8(normalizarPem(pem), ALG_LICENCA);
+  return normalizarPem(pem);
+}
+
+/**
+ * Exporta a chave PÚBLICA (SPKI PEM) derivada da privada corrente + o `kid` atual, para
+ * provisão no Licenciador (`ChavesPublicas`). Deriva a pública sem regerar o par nem
+ * expor a privada — assim a distribuição pode ser feita por tela, como o cert-pinning.
+ */
+export function exportarPublicaSpki(): { kid: string; spki_pem: string } {
+  const priv = createPrivateKey(carregarPrivadaPem());
+  const spki_pem = createPublicKey(priv).export({ type: 'spki', format: 'pem' }).toString();
+  return { kid: kidAtual(), spki_pem };
 }
 
 /**

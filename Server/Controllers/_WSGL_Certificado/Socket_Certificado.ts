@@ -47,5 +47,12 @@ export class Socket_Certificado {
                     .catch((err) => callback({ status: 'Erro', mensagem: (err as { mensagem?: string }).mensagem ?? 'Erro ao exportar o certificado' }));
             });
         });
+
+        sc.on('wsgl/chave.exportar', (d: Pacotes_Socket, callback = (..._: unknown[]) => { }) => {
+            this.comAutorizacao(d, 'tela/wsgl/certificado', callback, () => {
+                this._Cfg.ExportarChaveLicenca().then((dados) => callback({ status: 'OK', dados }))
+                    .catch((err) => callback({ status: 'Erro', mensagem: (err as { mensagem?: string }).mensagem ?? 'Erro ao exportar a chave de licenciamento' }));
+            });
+        });
     }
 }

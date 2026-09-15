@@ -2,7 +2,8 @@ import { describe, it, expect, afterEach } from 'vitest';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { gerarParDeChaves, carregarChavePrivada, normalizarPem } from '../Chaves';
+import { createPublicKey } from 'crypto';
+import { gerarParDeChaves, carregarChavePrivada, normalizarPem, exportarPublicaSpki } from '../Chaves';
 
 const ENV_PEM = 'WSGL_LICENCA_CHAVE_PRIVADA';
 const ENV_ARQ = 'WSGL_LICENCA_CHAVE_PRIVADA_ARQUIVO';
@@ -59,6 +60,37 @@ describe('carregarChavePrivada — env + arquivo', () => {
     process.env[ENV_PEM] = JSON.stringify(privadaPem);
     const chave = await carregarChavePrivada();
     expect(chave).toBeDefined();
+  });
+});
+
+describe('exportarPublicaSpki', () => {
+  it('deriva a pública SPKI correspondente à privada corrente, com o kid atual', async () => {
+    const { privadaPem, publicaPem } = await gerarParDeChaves();
+    limparEnv();
+    process.env[ENV_PEM] = privadaPem;
+    const { kid, spki_pem } = exportarPublicaSpki();
+    expect(kid).toBe('wsgl-dev'); // default
+    // A pública derivada deve bater com a pública do par (mesmo DER).
+    const derDerivada = createPublicKey(spki_pem).export({ type: 'spki', format: 'der' });
+    const derEsperada = createPublicKey(publicaPem).export({ type: 'spki', format: 'der' });
+    expect(derDerivada.equals(derEsperada)).toBe(true);
+  });
+
+  it('honra a env WSGL_LICENCA_KID', async () => {
+    const { privadaPem } = await gerarParDeChaves();
+    limparEnv();
+    process.env[ENV_PEM] = privadaPem;
+    process.env.WSGL_LICENCA_KID = 'wsgl-prod';
+    try {
+      expect(exportarPublicaSpki().kid).toBe('wsgl-prod');
+    } finally {
+      delete process.env.WSGL_LICENCA_KID;
+    }
+  });
+
+  it('lança { mensagem } quando não há chave privada', () => {
+    limparEnv();
+    expect(() => exportarPublicaSpki()).toThrow();
   });
 });
 
