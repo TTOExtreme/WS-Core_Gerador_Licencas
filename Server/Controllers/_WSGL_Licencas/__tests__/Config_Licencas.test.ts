@@ -214,6 +214,24 @@ describe('Config_Licencas ciclo de vida', () => {
   });
 });
 
+describe('Config_Licencas RenovarPorClusterUid', () => {
+  it('renovação pula licenças de ambiente=teste (não recapa o token longo)', async () => {
+    const fake = new FakeBD();
+    // Com o JOIN + filtro amb.tipo <> 'teste', um cluster só-de-teste não retorna
+    // licenças ativas do SELECT (a licença de teste já vem filtrada pela query).
+    fake.enfileirar([]); // SELECT de licenças ativas do cluster
+    fake.enfileirar({ affectedRows: 1 }); // UPDATE ultima_comunicacao
+    const cfg = new Config_Licencas({} as Modelo_Config, fake.comoConector());
+    const novos = await cfg.RenovarPorClusterUid('clu-x');
+    const select = fake.queries.find((q) => q.sql.includes('FROM _Mod_WSGL_Licencas l'));
+    expect(select?.sql).toContain('JOIN _Mod_WSGL_Ambientes amb ON amb.id = l.ambiente_id');
+    expect(select?.sql).toContain("amb.tipo <> 'teste'");
+    // não houve UPDATE de reassinatura
+    expect(fake.queries.some((q) => q.sql.includes('SET jws'))).toBe(false);
+    expect(novos.length).toBe(0);
+  });
+});
+
 describe('Config_Licencas InfoClusterPorUid', () => {
   it('devolve aprovado=true e nome/ambiente para cluster aprovado', async () => {
     const fake = new FakeBD();

@@ -184,13 +184,20 @@ export class Config_Licencas {
     return { aprovado: rows[0].situacao === 'aprovado', nome: rows[0].nome ?? null, ambiente: rows[0].ambiente ?? null };
   }
 
-  /** API: renova (re-assina por mais 30 dias) as licenças ativas de um cluster aprovado. Retorna os novos JWS. */
+  /**
+   * API: renova (re-assina por mais 30 dias) as licenças ativas de um cluster aprovado.
+   * Licenças de ambiente=teste são offline/longas (Fase 6): a renovação por sync NUNCA as
+   * reassina (recaparia o token longo para 30 dias), por isso o filtro `amb.tipo <> 'teste'`.
+   * Retorna os novos JWS.
+   */
   public async RenovarPorClusterUid(cluster_uid: string): Promise<string[]> {
     const rows = Object.assign([], await this._BD.Query(
       `SELECT l.* FROM _Mod_WSGL_Licencas l
          JOIN _Mod_WSGL_Clusters clu ON clu.id = l.cluster_id
+         JOIN _Mod_WSGL_Ambientes amb ON amb.id = l.ambiente_id
         WHERE clu.cluster_uid = ? AND clu.situacao = 'aprovado'
-          AND l.excluido = 0 AND l.situacao = 'ativa'`, [cluster_uid])
+          AND l.excluido = 0 AND l.situacao = 'ativa'
+          AND amb.tipo <> 'teste'`, [cluster_uid])
     ) as _Mod_WSGL_Licencas[];
     const novos: string[] = [];
     for (const l of rows) {
