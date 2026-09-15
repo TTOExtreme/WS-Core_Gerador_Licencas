@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { Config_Licencas } from '../Config_Licencas';
+import { Config_Licencas, type DadosEmissao } from '../Config_Licencas';
 import { FakeBD } from '../../../__tests__/FakeBD';
 import { gerarParDeChaves } from '../../Lib/Licenca/Chaves';
-import { TipoLicenca, NivelComercial, EscopoLicenca } from '../../Lib/Licenca/Tipos';
+import { TipoLicenca, NivelComercial, EscopoLicenca, ModeloUso } from '../../Lib/Licenca/Tipos';
 import type { Modelo_Config } from '../../../Models/Modelo_Configuracao';
 
 beforeAll(async () => {
@@ -142,6 +142,36 @@ describe('Config_Licencas.Emitir', () => {
     // das colunas — ex.: um Date acaba numa coluna BIGINT / um int numa TIMESTAMP).
     const nPlaceholders = (sql.match(/\?/g) || []).length;
     expect(nPlaceholders).toBe(insert!.valores.length);
+  });
+
+  it('ambiente=teste emite com validade longa (expira_em > 100 dias)', async () => {
+    const fake = new FakeBD();
+    fake.enfileirar([{ id: 5, cluster_uid: 'clu-x', situacao: 'aprovado' }]); // Buscar cluster
+    fake.enfileirar([{ id: 9, tipo: 'teste' }]);                              // Buscar ambiente
+    fake.enfileirar({ insertId: 1 });                                         // INSERT licença
+    fake.enfileirar([{ id: 1, lic_id: 'x', jws: 'j', situacao: 'ativa' }]);   // Buscar pós-insert
+    const cfg = new Config_Licencas({} as Modelo_Config, fake.comoConector());
+    await cfg.Emitir({ escopo: EscopoLicenca.BASE, cliente_id: 1, ambiente_id: 9, cluster_id: 5,
+                       nivel: NivelComercial.ENTERPRISE, modelo_uso: ModeloUso.SIMULTANEOS,
+                       vagas: 5, validadeDias: 720 } as DadosEmissao);
+    const ins = fake.queries.find((q) => q.sql.includes('INSERT INTO _Mod_WSGL_Licencas'))!;
+    const expiraLonge = ins.valores.some((v) => v instanceof Date && (v as Date).getTime() > Date.now() + 100 * 86400_000);
+    expect(expiraLonge).toBe(true);
+  });
+
+  it('ambiente=producao ignora validadeDias>30 (mantém teto 30)', async () => {
+    const fake = new FakeBD();
+    fake.enfileirar([{ id: 5, cluster_uid: 'clu-x', situacao: 'aprovado' }]);
+    fake.enfileirar([{ id: 2, tipo: 'producao' }]);
+    fake.enfileirar({ insertId: 1 });
+    fake.enfileirar([{ id: 1, lic_id: 'x', jws: 'j', situacao: 'ativa' }]);
+    const cfg = new Config_Licencas({} as Modelo_Config, fake.comoConector());
+    await cfg.Emitir({ escopo: EscopoLicenca.BASE, cliente_id: 1, ambiente_id: 2, cluster_id: 5,
+                       nivel: NivelComercial.ENTERPRISE, modelo_uso: ModeloUso.SIMULTANEOS,
+                       vagas: 5, validadeDias: 3650 } as DadosEmissao);
+    const ins = fake.queries.find((q) => q.sql.includes('INSERT INTO _Mod_WSGL_Licencas'))!;
+    const expiraLonge = ins.valores.some((v) => v instanceof Date && (v as Date).getTime() > Date.now() + 60 * 86400_000);
+    expect(expiraLonge).toBe(false); // capado em 30
   });
 });
 

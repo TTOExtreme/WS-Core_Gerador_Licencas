@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import { Modelo_Config } from '../../Models/Modelo_Configuracao';
 import { Conector_Mysql } from '../Lib/Conector_Mysql';
 import { _Mod_WSGL_Licencas } from '../../Models/DB/_Mod_WSGL_Licencas';
-import { assinarLicenca } from '../Lib/Licenca/Assinador';
+import { assinarLicenca, VALIDADE_MAXIMA_DIAS, VALIDADE_TESTE_MAXIMA_DIAS } from '../Lib/Licenca/Assinador';
 import { kidAtual } from '../Lib/Licenca/Chaves';
 import { LicencaClaims, TipoLicenca, NivelComercial, TipoAmbiente, LicencaLimites, EscopoLicenca, ModeloUso } from '../Lib/Licenca/Tipos';
 import { Config_Modulos } from '../_WSGL_Modulos/Config_Modulos';
@@ -74,10 +74,12 @@ export class Config_Licencas {
       modulo: d.modulo ?? null, versao: d.versao ?? null,
       nivel: norm.nivel, modelo_uso: norm.modelo_uso, limites: norm.limites,
     };
-    const dias = d.validadeDias ?? 30;
-    const jws = await assinarLicenca(claims, { validadeDias: dias });
+    const ehTeste = ambienteTipo === TipoAmbiente.TESTE;
+    const teto = ehTeste ? VALIDADE_TESTE_MAXIMA_DIAS : VALIDADE_MAXIMA_DIAS;
+    const dias = Math.min(d.validadeDias ?? 30, teto);
+    const jws = await assinarLicenca(claims, { validadeDias: dias, permitirLongo: ehTeste });
     const agora = new Date();
-    const expira = new Date(agora.getTime() + Math.min(dias, 30) * 86400 * 1000);
+    const expira = new Date(agora.getTime() + dias * 86400 * 1000);
 
     const r = await this._BD.Query(
       `INSERT INTO _Mod_WSGL_Licencas (lic_id, tipo, escopo, cliente_id, contrato_id, ambiente_id, cluster_id, modulo, versao,
