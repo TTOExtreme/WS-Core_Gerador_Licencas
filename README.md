@@ -42,7 +42,7 @@ Escopo funcional completo em
 
 ## Status
 
-Versão **1.1.0** (alinhada à versão do sistema WSCore). Em desenvolvimento —
+Versão **1.2.0** (alinhada à versão do sistema WSCore). Em desenvolvimento —
 convertido a partir do módulo de referência `WSCore_RH`, cuja infraestrutura
 (`Lib`, `Modulos`, `_WebFiles`, `Modelo_Configuracao`) é reaproveitada.
 
