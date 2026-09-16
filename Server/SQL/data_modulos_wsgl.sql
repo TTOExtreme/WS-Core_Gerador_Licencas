@@ -3,8 +3,8 @@
 -- O administrador ajusta versoes e flags (disponivel/beta/descomissionado) pela tela Modulos & Versoes.
 INSERT IGNORE INTO _Mod_WSGL_Modulos (modulo_nome, modulo_titulo, versao, situacao, criado_em, ativo, excluido) VALUES
 ("WSCore_Autenticador","Autenticador","1.1.0","disponivel",NOW(),1,0),
-("WSCore_GeradorLicencas","Gerador de Licencas","1.1.0","disponivel",NOW(),1,0),
-("WSCore_Licenciador","Licenciador","1.1.0","disponivel",NOW(),1,0),
+("WSCore_GeradorLicencas","Gerador de Licencas","1.2.0","disponivel",NOW(),1,0),
+("WSCore_Licenciador","Licenciador","1.2.0","disponivel",NOW(),1,0),
 ("WSCore_Financeiro","Financeiro","1.1.0","disponivel",NOW(),1,0),
 ("WSCore_RH","Recursos Humanos","1.1.0","disponivel",NOW(),1,0),
 ("WSCore_IPAM","IPAM","1.1.0","disponivel",NOW(),1,0),

@@ -35,7 +35,7 @@
     "vitest": "^4.1.8"
   },
   "name": "WSCore_GeradorLicencas",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Módulo Gerador de Licenças do WS-Core (emissor central)",
   "main": "/Server/WSCore_Mod_GeradorLicencas.ts",
   "scripts": {

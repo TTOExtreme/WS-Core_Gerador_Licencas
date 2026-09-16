@@ -90,7 +90,7 @@ function InicializarSocketServer(): Promise<void> {
         const ModData: Modulos_Struct = new Modulos_Struct(idConfig);
         ModData.Modulo_Nome = 'WSCore_GeradorLicencas';
         ModData.Modulo_Descricao = 'Módulo Gerador de Licenças (emissor central)';
-        ModData.Modulo_Versao = '1.1.0';
+        ModData.Modulo_Versao = '1.2.0';
         if (!idConfig) { ModData.Modulo_ID = ''; }
 
         _Core_Conection = new Socket_Client(new uint16(_Config.Core.Porta), _Config.Core.Host, ModData);
