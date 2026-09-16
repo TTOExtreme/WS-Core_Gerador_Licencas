@@ -311,18 +311,20 @@ function _configLicencas() {
                 icone: "block",
                 tipo: "perigo",
                 grupo: 3,
-                requerSelecao: -1,
+                requerSelecao: 1,
                 permissao: "wsgl/licencas.revogar",
-                title: "Revoga a licença selecionada (irreversível)",
+                title: "Revoga a(s) licença(s) selecionada(s) — irreversível",
                 async aoClicar(sel, _dados, tela) {
-                    const reg = sel[0];
-                    const confirmado = await window.WSCore_ModalConfirmacao.Abrir({
+                    const regs = (sel || []).filter(Boolean);
+                    if (regs.length === 0) return;
+                    const umaSo = regs.length === 1;
+                    const confirmado = await WSCore_ModalConfirmacao.Abrir({
                         tipo: "aviso",
-                        titulo: "Revogar licença",
-                        subtitulo: "A licença deixará de ser válida para a API de validação. Esta ação não pode ser desfeita.",
-                        registros: [{ label: reg.lic_id || ("#" + reg.id) }],
-                        textoConfirmacao: reg.lic_id || "REVOGAR",
-                        textoBotao: "Revogar licença",
+                        titulo: umaSo ? "Revogar licença" : ("Revogar " + regs.length + " licenças"),
+                        subtitulo: "A(s) licença(s) deixará(ão) de ser válida(s) para a API de validação. Esta ação não pode ser desfeita.",
+                        registros: regs.map((r) => ({ label: r.lic_id || ("#" + r.id) })),
+                        textoConfirmacao: umaSo ? (regs[0].lic_id || "REVOGAR") : "REVOGAR",
+                        textoBotao: umaSo ? "Revogar licença" : "Revogar selecionadas",
                     });
                     if (!confirmado) return;
                     await window._WSGL_GarantirFormulario();
@@ -334,16 +336,22 @@ function _configLicencas() {
                         valores: {},
                     });
                     if (!vals) return;
-                    _WebSocket.Emit("wsgl/licencas.revogar", "WSCore_GeradorLicencas/*", { id: reg.id, motivo: vals.motivo }, (r) => {
-                        if (r && r.status === "OK") {
-                            tela.LimparSelecao();
-                            tela.Recarregar();
-                            notificar("Licença revogada com sucesso", true);
-                            _LogAtividades.Registrar("Licença revogada", "aviso");
-                        } else {
-                            notificar((r && r.mensagem) || "Erro ao revogar licença", false);
-                        }
+                    const revogarUma = (reg) => new Promise((resolve) => {
+                        _WebSocket.Emit("wsgl/licencas.revogar", "WSCore_GeradorLicencas/*", { id: reg.id, motivo: vals.motivo }, (r) => {
+                            resolve(!!(r && r.status === "OK"));
+                        });
                     });
+                    let ok = 0;
+                    for (const reg of regs) { if (await revogarUma(reg)) ok++; }
+                    const falhas = regs.length - ok;
+                    tela.LimparSelecao();
+                    tela.Recarregar();
+                    if (falhas === 0) {
+                        notificar(umaSo ? "Licença revogada com sucesso" : (ok + " licenças revogadas"), true);
+                    } else {
+                        notificar(ok + " revogada(s), " + falhas + " falhou(aram)", false);
+                    }
+                    _LogAtividades.Registrar("Revogação de licença (" + ok + "/" + regs.length + ")", "aviso");
                 },
             },
         ],

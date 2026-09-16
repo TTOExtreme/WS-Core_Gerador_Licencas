@@ -129,7 +129,7 @@ function _configModulos() {
                 permissao: "wsgl/modulos.excluir",
                 async aoClicar(sel, _dados, tela) {
                     const ids = sel.map((s) => s.id);
-                    const confirmado = await window.WSCore_ModalConfirmacao.Abrir({
+                    const confirmado = await WSCore_ModalConfirmacao.Abrir({
                         tipo: "aviso", titulo: "Excluir módulo(s)",
                         subtitulo: "Os itens selecionados serão removidos do catálogo.",
                         registros: sel.map((s) => ({ label: s.modulo_nome + " v" + s.versao })),
